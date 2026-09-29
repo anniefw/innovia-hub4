@@ -18,6 +18,7 @@ Innovia Hub är ett bokningssystem för delade resurser (t.ex. mötesrum, skrivb
 ## Teknikstack
 
 **Backend**
+
 - .NET 10 / ASP.NET Core Minimal API
 - Entity Framework Core + Npgsql (PostgreSQL)
 - ASP.NET Core Identity (användare, roller, lösenordshantering)
@@ -26,6 +27,7 @@ Innovia Hub är ett bokningssystem för delade resurser (t.ex. mötesrum, skrivb
 - Scalar för interaktiv OpenAPI-dokumentation
 
 **Frontend**
+
 - React 19 + TypeScript + Vite
 - React Router för routing
 - TanStack Query för server state/caching
@@ -34,6 +36,7 @@ Innovia Hub är ett bokningssystem för delade resurser (t.ex. mötesrum, skrivb
 - Recharts för diagram (t.ex. beläggning/occupancy)
 
 **Infrastruktur**
+
 - PostgreSQL 17 i Docker
 - Caddy som reverse proxy + automatisk HTTPS i produktion
 - Docker Compose för lokal utveckling och produktion
@@ -71,6 +74,7 @@ Handlers returnerar `Result` / `Result<T>` (se `Common/Result/`) istället för 
 ### Realtid (SignalR)
 
 Två hubbar sänder ut händelser till klienter som prenumererar:
+
 - `BookingHub` – bokningar skapas/uppdateras/avbokas, samt en admin-grupp som får alla bokningshändelser.
 - `ResourceHub` – ändringar i resursstatus (t.ex. offline/underhåll).
 
@@ -103,7 +107,7 @@ innovia-hub4/
 │       ├── api/                 # HTTP-klient mot backend
 │       ├── auth/                # Auth-context/hooks
 │       ├── components/          # Delade UI-komponenter
-│       ├── hooks/                
+│       ├── hooks/
 │       ├── lib/                 # SignalR-anslutningar m.m.
 │       └── pages/                # member/ och admin/ sidor
 ├── tests/
@@ -162,6 +166,8 @@ Detta startar en lokal PostgreSQL-instans (`innovia_db`) på port `5432`, konfig
 ```bash
 cd Innovia.Api
 dotnet run
+eller
+dotnet run --launch-profile https
 ```
 
 Vid uppstart körs migrations och seed-data automatiskt mot databasen. API:et lyssnar som default på `http://localhost:5123` / `https://localhost:7229` (se `Properties/launchSettings.json`).
@@ -188,14 +194,14 @@ Gå till frontend-adressen i webbläsaren, logga in med admin-kontot eller regis
 
 Se `example.env` för samtliga variabler som behövs för produktion/Docker Compose:
 
-| Variabel | Beskrivning |
-|---|---|
-| `APP_DOMAIN` / `API_DOMAIN` | Domäner som Caddy terminerar TLS för och proxar vidare till frontend/api |
-| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Databasuppgifter |
-| `JWT_ISSUER` / `JWT_AUDIENCE` / `JWT_SECRET` | JWT-konfiguration (secret måste vara lång/slumpad i produktion) |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Uppgifter för det seedade admin-kontot |
-| `FRONTEND_ORIGIN` | Tillåten CORS-origin för API:et |
-| `VITE_API_URL` | URL frontend bygger mot (bakas in i frontend-bygget) |
+| Variabel                                              | Beskrivning                                                              |
+| ----------------------------------------------------- | ------------------------------------------------------------------------ |
+| `APP_DOMAIN` / `API_DOMAIN`                           | Domäner som Caddy terminerar TLS för och proxar vidare till frontend/api |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Databasuppgifter                                                         |
+| `JWT_ISSUER` / `JWT_AUDIENCE` / `JWT_SECRET`          | JWT-konfiguration (secret måste vara lång/slumpad i produktion)          |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD`                      | Uppgifter för det seedade admin-kontot                                   |
+| `FRONTEND_ORIGIN`                                     | Tillåten CORS-origin för API:et                                          |
+| `VITE_API_URL`                                        | URL frontend bygger mot (bakas in i frontend-bygget)                     |
 
 Lokalt under utveckling styrs backend istället av `Innovia.Api/appsettings.json` / `appsettings.Development.json`.
 
@@ -219,10 +225,12 @@ npm run lint
 ## CI/CD och deploy
 
 **CI** (`.github/workflows/ci.yaml`) körs på push/PR mot `main` och `dev`:
+
 - Backend: restore, build och `dotnet test` mot hela lösningen (`Innovia.slnx`)
 - Frontend: `npm ci`, lint och build
 
 **Deploy** (`.github/workflows/deploy.yaml`) körs på push till `main`:
+
 1. Bygger och pushar Docker-images för API och frontend till GitHub Container Registry (GHCR), taggade med både `latest` och commit-SHA.
 2. Kopierar `docker-compose.prod.yaml` och `Caddyfile` till produktionsservern via SCP.
 3. SSH:ar in på servern, drar nya images (`IMAGE_TAG` = commit-SHA) och kör `docker compose up -d` för att rulla ut ny version, samt städar bort gamla images.

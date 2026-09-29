@@ -63,6 +63,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 builder.Services.AddCors(options =>
 {
     var frontendOrigin = builder.Configuration["Cors:FrontendOrigin"] ?? "http://localhost:5173";
+    Console.WriteLine($"CORS tillåter: {frontendOrigin}");
     options.AddPolicy("Frontend", policy =>
         policy.WithOrigins(frontendOrigin)
             .AllowAnyHeader()

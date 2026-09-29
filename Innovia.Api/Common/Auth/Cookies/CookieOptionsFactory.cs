@@ -6,14 +6,14 @@ public static class CookieOptionsFactory
     {
         HttpOnly = true,
         Secure = secure,
-        SameSite = SameSiteMode.Strict,
+        SameSite = SameSiteMode.None,
         Expires = expires
     };
     public static CookieOptions CreateRefreshTokenCookieOptions(DateTimeOffset expires, bool secure) => new()
     {
         HttpOnly = true,
         Secure = secure,
-        SameSite = SameSiteMode.Strict,
+        SameSite = SameSiteMode.None,
         Expires = expires,
         Path = "/auth"
     };
