@@ -4,17 +4,17 @@
 
 ## Steg 0: Förberedelser (30 min)
 
-- [ ] Skapa en branch: `git checkout -b feature/assistant`
-- [ ] Lägg in OpenAI-nyckeln med **user-secrets** (i `Innovia.Api`-mappen):
+- [x] Skapa en dev-branch.
+- [x] Lägg in OpenAI-nyckeln med **user-secrets** (i `Innovia.Api`-mappen):
   ```powershell
   dotnet user-secrets set "OpenAI:ApiKey" "sk-..."
   ```
-- [ ] Lägg modellnamnet (inte hemligt) i `appsettings.json`:
+- [x] Lägg modellnamnet (inte hemligt) i `appsettings.json`:
   ```json
   "OpenAI": { "Model": "<liten, billig modell som läraren godkänt>" }
   ```
-- [ ] Installera paketen `Microsoft.Extensions.AgitI` och `Microsoft.Extensions.AI.OpenAI`
-- [ ] Skapa mappen `Features/Assistant/`
+- [x] Installera paketen `Microsoft.Extensions.AgitI` och `Microsoft.Extensions.AI.OpenAI`
+- [x] Skapa mappen `Features/Assistant/`
 
 **Klart när:** `dotnet user-secrets list` visar nyckeln och projektet bygger.
 
