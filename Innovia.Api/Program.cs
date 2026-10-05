@@ -3,6 +3,7 @@ using Innovia.Api.Common.Database;
 using Innovia.Api.Common.Database.Entities;
 using Innovia.Api.Common.Database.Seed;
 using Innovia.Api.Common.OpenApi;
+using Innovia.Api.Features.Assistant;
 using Innovia.Api.Features.Auth;
 using Innovia.Api.Features.Availability;
 using Innovia.Api.Features.Bookings;
@@ -85,6 +86,8 @@ builder.Services.AddAvailabilityFeature();
 builder.Services.AddOccupancyFeature();
 builder.Services.AddUsersFeature();
 
+builder.Services.AddAssistantFeature();
+
 var app = builder.Build();
 
 app.UseForwardedHeaders();
@@ -115,6 +118,8 @@ app.MapResourceTypesEndpoints();
 app.MapAvailabilityEndpoints();
 app.MapOccupancyEndpoints();
 app.MapUsersEndpoints();
+
+app.MapAssistantEndpoints();
 
 
 app.Run();
