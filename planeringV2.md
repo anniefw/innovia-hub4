@@ -76,9 +76,9 @@ Skapa en klass, t.ex. `AssistantContextBuilder`, som bara sätter ihop en `strin
 ## Steg 4: Streaming och ChatHub (2–3 h)
 
 - [x] Gör om Handlern så att den returnerar `IAsyncEnumerable<string>`: byt till `GetStreamingResponseAsync` och `yield return` varje textbit
-- [ ] Skapa `ChatHub` i `Features/Assistant/` (mall: `ResourceHub`). `[Authorize]`, metoden `Ask(...)` anropar bara Handlern
-- [ ] Mappa hubben i `Program.cs` på `/hubs/chat`
-- [ ] Ta bort den tillfälliga endpointen från steg 3, eller lägg den bakom AdminOnly
+- [x] Skapa `ChatHub` i `Features/Assistant/` (mall: `ResourceHub`). `[Authorize]`, metoden `Ask(...)` anropar bara Handlern
+- [x] Mappa hubben i `Program.cs` på `/hubs/chat`
+- [x] Ta bort den tillfälliga endpointen från steg 3, eller lägg den bakom AdminOnly
 
 **Klart när:** projektet bygger och startar utan fel.
 
