@@ -1,11 +1,32 @@
 using Innovia.Api.Common.Auth;
+using Microsoft.Extensions.AI;
+using OpenAI.Chat;
 
 namespace Innovia.Api.Features.Assistant;
     public static class AssistantServiceExtensions
     {
-    public static IServiceCollection AddAssistantFeature (this IServiceCollection services)
+        //Tar emot IConfiguration för att kunna läsa modell och nyckel
+    public static IServiceCollection AddAssistantFeature (this IServiceCollection services, IConfiguration configuration)
     {
         services.AddScoped<AssistantContextBuilder>();
+        
+        // TODO 3.5: services.AddScoped<AskAssistant.Handler>();
+        // (läggs till när Handlern finns, annars bygger det inte)
+
+        //1. Läs konfiguration. IConfiguration slår emot appsetting.json, user secrets och miljövariabler
+        var apiKey = configuration["OpenAI:ApiKey"]; //fr User Secrets
+        var model = configuration["OpenAI:Model"]; //fr appsettings
+
+        //2. Kontrollera att värdena finns
+        if(string.IsNullOrWhiteSpace(apiKey))
+            throw new InvalidOperationException("OpenAI:ApiKey saknas. Kör: dotnet user-secrets set \"OpenAI:ApiKey\" \"sk-...\"");
+
+        if(string.IsNullOrWhiteSpace(model))
+            throw new InvalidOperationException("OpenAI:Model saknas i appsettings.json");
+
+        //3. Registrera IChatClient
+        services.AddSingleton<IChatClient>(new ChatClient(model,apiKey).AsIChatClient());
+
 
         return services;
     }

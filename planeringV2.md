@@ -47,10 +47,9 @@
 
 Skapa en klass, t.ex. `AssistantContextBuilder`, som bara sätter ihop en `string`:
 
-- [ ] Läs knowledge.md (`File.ReadAllTextAsync` + `AppContext.BaseDirectory`)
-- [ ] Hämta `AvailabilityRules` → text, t.ex. `Mötesrum: måndag 08:00–20:00`
-- [ ] Hämta `Resources` (namn, typ, beskrivning, status) → text
-- [ ] Sätt ihop allt med tydliga rubriker (`--- ALLMÄN INFORMATION ---` osv.)
+- [x] Hämta `AvailabilityRules` → text, t.ex. `Mötesrum: måndag 08:00–20:00`
+- [x] Hämta `Resources` (namn, typ, beskrivning, status) → text
+- [x] Sätt ihop allt med tydliga rubriker (`--- ALLMÄN INFORMATION ---` osv.)
 
 **Tips:** Gör en tillfällig endpoint som returnerar strängen och öppna den i webbläsaren. Då ser du exakt vad AI:n kommer att läsa. Kan du inte svara på testfrågorna utifrån texten kan AI:n det inte heller.
 
@@ -142,6 +141,30 @@ Skapa en klass, t.ex. `AssistantContextBuilder`, som bara sätter ihop en `strin
 
 ---
 
-## Varför den här ordningen?
+SISTA STEGEN:
 
-Genom att först få ett vanligt svar (steg 3) innan streaming (steg 4) vet du att nyckel, prompt och OpenAI-anrop fungerar. Krånglar något i steg 4–5 sitter felet i streamingen eller frontend, inte i AI-delen. Isolera en del i taget.
+- Be om visuell bild för flödet från Claude
+- Gör testning och kvalitets-delen (se nedan)
+
+Krav:
+Planering inlämnad under V1
+
+Körbar lösning i repo
+
+Teknisk dokumentation (README)
+
+Teknisk demo till Janne under ca 10 minuter på torsdag eller fredag
+
+## För betyget VG:
+
+Önskar du bedömas mot betyget VG (Notera detta i din inlämning så jag vet) så ska du utöver kraven bifoga en rapport i repot döpt till
+
+## "Testning_och_kvalitet.md"
+
+där du hänvisar till skrivna enhetstester i projektet och varför du anser de är viktiga för projektet. Du ska även reflektera över hur du arbetat för att projektet skall enkelt kunna vidareutvecklas med nya funktioner. Rapporten skall även innehålla en punkt om säkerhet, hur hemliga nycklar hanteras och implementeras i produktion.
+
+Använd rubrikerna:
+
+Mina tester
+Framtids säkring
+Säkerhet

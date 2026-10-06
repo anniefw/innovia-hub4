@@ -86,7 +86,7 @@ builder.Services.AddAvailabilityFeature();
 builder.Services.AddOccupancyFeature();
 builder.Services.AddUsersFeature();
 
-builder.Services.AddAssistantFeature();
+builder.Services.AddAssistantFeature(builder.Configuration);
 
 var app = builder.Build();
 
