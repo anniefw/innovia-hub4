@@ -9,9 +9,7 @@ namespace Innovia.Api.Features.Assistant;
     public static IServiceCollection AddAssistantFeature (this IServiceCollection services, IConfiguration configuration)
     {
         services.AddScoped<AssistantContextBuilder>();
-        
-        // TODO 3.5: services.AddScoped<AskAssistant.Handler>();
-        // (läggs till när Handlern finns, annars bygger det inte)
+        services.AddScoped<AskAssistant.Handler>();
 
         //1. Läs konfiguration. IConfiguration slår emot appsetting.json, user secrets och miljövariabler
         var apiKey = configuration["OpenAI:ApiKey"]; //fr User Secrets
