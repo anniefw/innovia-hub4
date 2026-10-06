@@ -18,42 +18,49 @@ public sealed class Handler
         _chatClient = chatClient;
         _contextBuilder = contextBuilder;
     }
-
+    // ── Publik metod: helt svar på en gång ────────────────────────────────────
+    // Används av POST /assistant/ask (felsökning i Scalar) och av testerna.
     public async Task<string> HandleAsync(Request request, CancellationToken ct)
     {
-        //1. Hämta instruktionerna och contex
-        var systemPrompt = await _contextBuilder.ReadSystemPromptAsync(ct); //HUR Nova ska bete sig
-        var context = await _contextBuilder.BuildAsync(ct); //VAD hon vet
+        // 1. Bygg meddelandelistan (gemensam logik, se nedan)
+        var messages = await BuildMessagesAsync(request, ct);
 
-        //2. Bygg meddelandelistan
-            //2a. Systemmeddelande: instruktionerna först, sen frågan
+        // 2. Skicka till AI:n och VÄNTA på hela svaret
+        var response = await _chatClient.GetResponseAsync(messages, cancellationToken: ct);
+
+        // 3. Returnera all text
+        return response.Text;
+    }
+
+    // ── Privat hjälpmetod: bygger meddelandelistan ────────────────────────────
+    // UTBRUTEN från HandleAsync så att StreamAsync (4.2) kan använda samma logik.
+    // All säkerhet kring roller finns därmed på ETT ställe.
+    private async Task<List<ChatMessage>> BuildMessagesAsync(Request request, CancellationToken ct)
+    {
+        // ── a. Hämta instruktioner och kontext ────────────────────────────────
+        var systemPrompt = await _contextBuilder.ReadSystemPromptAsync(ct);  // HUR Nova ska bete sig
+        var context = await _contextBuilder.BuildAsync(ct);                  // VAD Nova vet
+
+        // ── b. Systemmeddelandet först: instruktioner, sedan information ──────
         var messages = new List<ChatMessage>
         {
             new(ChatRole.System, $"{systemPrompt}\n\n{context}")
         };
-            //2b. Historiken - bara de senaste meddelandena, "request.History ?? []" = om History är null, använd en tom lista
-            //(annars kraschar TakeLast med NullReferenceException vid första frågan).
+
+        // ── c. Historiken: bara de senaste meddelandena ───────────────────────
         var history = (request.History ?? []).TakeLast(maxHistoryMessages);
 
         foreach (var turn in history)
-            //översätt rollen från text(frontend) till ChatRole(AI-biblotek)
-            // SÄKERHET: bara exakt "assistant" blir Assistant, ALLT annat blir User.
-            // Skickar någon "system" från webbläsaren blir det alltså ett vanligt
-            // user-meddelande. Bara backend kan skapa systemmeddelandet.
         {
+            // SÄKERHET: bara exakt "assistant" blir Assistant, ALLT annat blir User.
+            // Bara backend kan skapa systemmeddelandet.
             var role = turn.Role == "assistant" ? ChatRole.Assistant : ChatRole.User;
-
             messages.Add(new ChatMessage(role, turn.Text));
         }
 
-            //2c.Frågan som ställs nu
-            messages.Add(new ChatMessage(ChatRole.User, request.Question));
+        // ── d. Sist: frågan som ställs nu ─────────────────────────────────────
+        messages.Add(new ChatMessage(ChatRole.User, request.Question));
 
-        //3. Skicka meddelandelistan till AI (väntar in hela svaret)
-        var response = await _chatClient.GetResponseAsync(messages, cancellationToken: ct);
-
-        //4. Returnera svaret som sträng
-        return response.Text; 
+        return messages;
     }
-    
 }

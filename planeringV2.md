@@ -170,8 +170,83 @@ Framtids säkring
 Säkerhet
 
 Rapportdel
+
 Enhetstester
 Validator-tester (+ Handler och ContextBuilder snart). Testfrågorna som komplement
+
+## Enhetstester för AI-assistenten Nova
+
+Testerna ligger i `tests/Innovia.Api.Tests/Features/AssistantTests/` och körs med:
+
+    dotnet test
+
+Om endast testerna för Ai-assistenten önskas, kör istället:
+
+    dotnet test --filter "FullyQualifiedName~AssistantTests"
+
+### Sammanfattning av testfilerna
+
+**`AskAssistantValidatorTests`** (13 tester)
+Rena enhetstester utan databas eller andra beroenden. Testar att `Validator` stoppar
+ogiltiga frågor innan de når AI:n: tomma frågor, för långa frågor (med gränsvärdestest
+på exakt 500 tecken), för lång historik och otillåtna roller i historiken. Använder
+`[Theory]` med `[InlineData]` för att testa flera varianter av samma regel.
+
+**`AskAssistantHandlerTests`** (7 tester)
+Testar att `Handler` bygger rätt meddelandelista till AI:n. OpenAI byts ut mot en falsk
+`IChatClient` som sparar vad den fick och alltid svarar likadant. Testerna blir därför
+snabba, gratis och ger samma resultat varje gång. Testar ordningen på meddelandena
+(systemmeddelande först, frågan sist), att roller översätts rätt, att historiken
+begränsas till de sex senaste meddelandena och att rollen `system` från klienten aldrig
+accepteras.
+
+**`AssistantContextBuilderTests`** (7 tester)
+Testar att texten Nova får läsa innehåller rätt information. Seedar egen testdata i
+databasen och kontrollerar att öppettider hämtas från `AvailabilityRule`, att stängda
+dagar skrivs ut, att resursstatus (tillgänglig/underhåll) visas live och att arkiverade
+resurser inte nämns. Kontrollerar även att kunskapsfilen och dagens svenska veckodag
+finns med.
+
+### Tre särskilt viktiga tester
+
+**1. `Should_Never_Accept_System_Role_From_Client`** (Handler)
+Det här är ett säkerhetstest. Frontend körs i användarens webbläsare, och vem som helst
+kan ändra det som skickas till backend. Om backend accepterade ett historikmeddelande
+med rollen `system` kunde en användare skriva egna regler som AI:n behandlar som
+utvecklarens instruktioner och därmed kringgå alla begränsningar. Testet anropar
+Handlern direkt, utan Validatorn emellan, och visar att skyddet håller även om
+valideringen skulle missas (defense in depth). Skyddet går inte att kontrollera genom
+att bara testa AI:ns svar, eftersom modellen kan svara rimligt även när koden är
+sårbar. Bara ett test av själva meddelandelistan kan visa det.
+
+**2. `Should_Put_System_Message_First_With_Instructions_And_Context`** (Handler)
+Testet kontrollerar att systemprompten faktiskt skickas till AI:n genom att leta efter
+reservfrasen, som bara finns i `systemprompt.md`. Under utvecklingen fanns en bugg där
+fil-läsningen alltid läste `knowledge.md`, oavsett vilket filnamn som skickades in.
+Nova fick då aldrig sina regler, men ingenting kraschade och svaren såg ofta rimliga
+ut. Testet hade fångat buggen direkt.
+
+**3. `Should_Show_Resource_In_Maintenance`** (ContextBuilder)
+Live-data är det som skiljer Nova från en vanlig FAQ-chattbot. När admin sätter en
+resurs på underhåll ska Nova veta det direkt, utan omstart. Testet säkerställer att
+resursstatus från databasen hamnar i texten som AI:n läser. Det skyddar också mot en
+typ av bugg som är svår att upptäcka manuellt: om statusen försvann ur texten skulle
+Nova fortfarande svara, men med fel information, till exempel att ett headset är
+tillgängligt när det är trasigt.
+
+### Enhetstester och testfrågor kompletterar varandra
+
+Utöver enhetstesterna finns en lista med testfrågor (`Features/Assistant/testfragor.md`)
+som körs manuellt mot den riktiga AI:n. De två testsätten mäter olika saker:
+
+- **Enhetstesterna** kontrollerar _min kod_: att rätt information och rätt instruktioner
+  skickas. De ger samma resultat varje gång och körs automatiskt.
+- **Testfrågorna** utvärderar _AI:ns svar_: att Nova faktiskt svarar korrekt. Svaren
+  formuleras olika varje gång och varje anrop kostar pengar, så de passar inte som
+  automatiska tester.
+
+Uppdelningen är möjlig eftersom `Handler` beror på gränssnittet `IChatClient` och inte
+direkt på OpenAI. Därför kan den riktiga AI:n bytas mot en falsk i testerna.
 
 Vidareutveckling
 Vertical slice, IChatClient som gränssnitt (byt leverantör på en rad), AssistantContextBuilder separat, Validator återanvänds i steg 4, knowledge.md utan kodändring
