@@ -10,6 +10,7 @@ namespace Innovia.Api.Features.Assistant;
     {
         services.AddScoped<AssistantContextBuilder>();
         services.AddScoped<AskAssistant.Handler>();
+        services.AddScoped<AskAssistant.Validator>();
 
         //1. Läs konfiguration. IConfiguration slår emot appsetting.json, user secrets och miljövariabler
         var apiKey = configuration["OpenAI:ApiKey"]; //fr User Secrets
@@ -34,16 +35,19 @@ namespace Innovia.Api.Features.Assistant;
         //routegrupp: All endpoints här får adess som börjar med /assistant
         var group = app.MapGroup("/assistant").WithTags("Assistant");
 
-        //Tillfällig
+        AskAssistant.Endpoint.Map(group)
+            .RequireAuthorization();
+
         group.MapGet("/context", async (AssistantContextBuilder builder, CancellationToken ct) =>
         {
             var text = await builder.BuildAsync(ct);
-
-
             return Results.Text(text, "text/plain; charset=utf-8");
             //charset=utf-8 gör så att å ä ö inte blir konstiga tecken i webbläsaren
         })
-        .RequireAuthorization(AuthorizationPolicies.AdminOnly);
+            .RequireAuthorization(AuthorizationPolicies.AdminOnly);
+
+
+        
 
         return group;
         
