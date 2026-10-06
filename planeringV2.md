@@ -59,13 +59,13 @@ Skapa en klass, t.ex. `AssistantContextBuilder`, som bara sätter ihop en `strin
 
 ## Steg 3: Första AI-svaret, utan streaming (2 h)
 
-- [ ] Registrera `IChatClient` i `Program.cs`. Det är enda stället där OpenAI nämns.
-- [ ] Skapa `AskAssistantHandler` (samma mönster som övriga Handlers):
+- [x] Registrera `IChatClient` i `Program.cs`. Det är enda stället där OpenAI nämns.
+- [x] Skapa `AskAssistantHandler` (samma mönster som övriga Handlers):
   - Request: `Question` + `History`
   - Meddelandelista: **system** (instruktioner + text från steg 2) → historik → **user** (frågan)
   - Anropa `GetResponseAsync`, returnera svaret som sträng
-- [ ] Skriv systemprompten. Ta med en **exakt reservfras**, t.ex. _"Det hittar jag tyvärr ingen information om."_ (den behövs i steg 6)
-- [ ] Testa via en tillfällig HTTP-endpoint (Swagger / Postman / `.http`-fil)
+- [x] Skriv systemprompten. Ta med en **exakt reservfras**, t.ex. _"Det hittar jag tyvärr ingen information om."_ (den behövs i steg 6)
+- [x] Testa via en tillfällig HTTP-endpoint (Swagger / Postman / `.http`-fil)
 
 **Klart när:** "Får jag ta med gäster?" ger ett korrekt svar.
 
@@ -168,3 +168,13 @@ Använd rubrikerna:
 Mina tester
 Framtids säkring
 Säkerhet
+
+Rapportdel
+Enhetstester
+Validator-tester (+ Handler och ContextBuilder snart). Testfrågorna som komplement
+
+Vidareutveckling
+Vertical slice, IChatClient som gränssnitt (byt leverantör på en rad), AssistantContextBuilder separat, Validator återanvänds i steg 4, knowledge.md utan kodändring
+
+Säkerhet
+User-secrets lokalt, miljövariabel OpenAI\_\_ApiKey i produktion, fail-fast om nyckeln saknas, nyckeln aldrig i frontend, rollskydd i två lager
