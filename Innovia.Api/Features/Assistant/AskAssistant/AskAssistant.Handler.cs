@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.AI;
 
 namespace Innovia.Api.Features.Assistant.AskAssistant;
@@ -30,6 +31,33 @@ public sealed class Handler
 
         // 3. Returnera all text
         return response.Text;
+    }
+
+    // IAsyncEnumerable<string> = "en lista med strängar som fylls på över tid".
+    // Den som anropar loopar över den med "await foreach" och får en bit i taget.
+    //
+    // [EnumeratorCancellation] = koppla ct till loopen. Om användaren stänger
+    // chatten mitt i ett svar avbryts både loopen OCH anropet till OpenAI.
+    public async IAsyncEnumerable<string> StreamAsync(
+        Request request,
+        [EnumeratorCancellation] CancellationToken ct
+    )
+    {
+        //1. Bygg meddelandelista
+        var messages = await BuildMessagesAsync(request, ct);
+
+        //2. Be Ai:n om strömmade/streaming svar. "await foreach" = loopa över bitar som kommer in över tid.
+        await foreach (var update in _chatClient.GetStreamingResponseAsync(messages, cancellationToken: ct ))
+        {
+            if(string.IsNullOrEmpty(update.Text))
+                continue;
+
+        //3. "Yield return" lämna ut den här biten till den som frågar
+            yield return update.Text;
+            
+        }
+
+        
     }
 
     // ── Privat hjälpmetod: bygger meddelandelistan ────────────────────────────
