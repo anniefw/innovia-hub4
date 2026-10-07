@@ -7,6 +7,7 @@ public sealed class AssistantRateLimiter
 {
     //Konstanter
     private static readonly TimeSpan Window = TimeSpan.FromHours(1); //fönstrets längd
+    public const string LimitReachedMessage = "Åh nu har du ställt för många frågor! Du har max 20 frågor på en timma. Försök igen om en stund så ska jag svara då!";
 
     //Beroenden
     private readonly IMemoryCache _cache; //var räknarna sparas (i serverns minne)

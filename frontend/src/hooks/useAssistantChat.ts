@@ -12,6 +12,7 @@ import type { ISubscription } from "@microsoft/signalr";
 const MAX_HISTORY = 6;
 const ERROR_MESSAGE =
   "Nova har gått vilse i Hubströmmen! Försök om en stund igen.";
+const HUB_EXCEPTION_MARKER = "HubException: ";
 
 //Typer
 export type AssistantMessage = {
@@ -20,7 +21,17 @@ export type AssistantMessage = {
   text: string;
 };
 
-//Hook
+//Hjälpfunktion
+// Plockar ut meddelandet från en HubException, om felet var en sådan. Andra fel (anslutningen bröts, servern nere) → null → generellt felmeddelande.
+function extractHubMessage(err: unknown): string | null {
+  if (!(err instanceof Error)) return null;
+
+  const index = err.message.indexOf(HUB_EXCEPTION_MARKER);
+  if (index === -1) return null;
+
+  return err.message.slice(index + HUB_EXCEPTION_MARKER.length);
+}
+
 export function useAssistantChat() {
   //State: det widgeten ritar ut
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
@@ -50,7 +61,7 @@ export function useAssistantChat() {
     setMessages((prev) =>
       prev.filter((m) => m.id !== assistantId || m.text !== ""),
     );
-    setError(ERROR_MESSAGE);
+    setError(extractHubMessage(err) ?? ERROR_MESSAGE);
     setIsStreaming(false);
     subscriptionRef.current = null;
   };

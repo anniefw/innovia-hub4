@@ -21,7 +21,7 @@ namespace Innovia.Api.Features.Assistant;
         //1. Läs konfiguration. IConfiguration slår emot appsetting.json, user secrets och miljövariabler
         var apiKey = configuration["OpenAI:ApiKey"]; //fr User Secrets
         var model = configuration["OpenAI:Model"]; //fr appsettings
-        var maxQuestionsPerHour = configuration.GetValue("Assistant: MaxQuestionsPerHour", 20);
+        var maxQuestionsPerHour = configuration.GetValue("Assistant:MaxQuestionsPerHour", 20);
 
         //2. Kontrollera att värdena finns
         if(string.IsNullOrWhiteSpace(apiKey))

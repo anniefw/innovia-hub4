@@ -109,10 +109,13 @@ Skapa en klass, t.ex. `AssistantContextBuilder`, som bara sätter ihop en `strin
 
 ## Steg 6: Skydd och loggning (1–2 h)
 
-- [ ] Begränsa antalet frågor per användare (t.ex. 20/timme)
+- [x] Begränsa antalet frågor per användare (t.ex. 20/timme)
   > ⚠️ **Fälla:** ASP.NET:s inbyggda rate limiter räknar HTTP-anrop, men SignalR håller **en** långlivad anslutning, så limitern ser inte de enskilda frågorna. Räkna själv i Handlern, t.ex. med `IMemoryCache` och användar-id som nyckel.
 - [ ] Logga obesvarade frågor: samla ihop hela svaret under streamingen. Innehåller det reservfrasen → logga frågan med `ILogger`
 - [ ] Kontrollera att inget namn eller ingen e-post skickas till OpenAI
+      6.2 Använd limitern i ChatHub och Endpoint + visa ett vänligt meddelande i frontend ChatHub, Endpoint, hook
+      6.3 Logga obesvarade frågor Handler
+      6.4 GDPR-kontroll + koppla ner SignalR vid utloggning Granskning + AuthContext
 
 **Klart när:** fråga nr 21 ger ett vänligt "försök igen senare", och obesvarade frågor syns i terminalen.
 
