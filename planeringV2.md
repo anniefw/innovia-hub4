@@ -111,7 +111,7 @@ Skapa en klass, t.ex. `AssistantContextBuilder`, som bara sätter ihop en `strin
 
 - [x] Begränsa antalet frågor per användare (t.ex. 20/timme)
   > ⚠️ **Fälla:** ASP.NET:s inbyggda rate limiter räknar HTTP-anrop, men SignalR håller **en** långlivad anslutning, så limitern ser inte de enskilda frågorna. Räkna själv i Handlern, t.ex. med `IMemoryCache` och användar-id som nyckel.
-- [ ] Logga obesvarade frågor: samla ihop hela svaret under streamingen. Innehåller det reservfrasen → logga frågan med `ILogger`
+- [x] Logga obesvarade frågor: samla ihop hela svaret under streamingen. Innehåller det reservfrasen → logga frågan med `ILogger`
 - [x] Kontrollera att inget namn eller ingen e-post skickas till OpenAI
 
 **Klart när:** fråga nr 21 ger ett vänligt "försök igen senare", och obesvarade frågor syns i terminalen.
@@ -120,9 +120,9 @@ Skapa en klass, t.ex. `AssistantContextBuilder`, som bara sätter ihop en `strin
 
 ## Steg 7: Kvalitet (2 h)
 
-- [ ] Kör testfrågelistan och bocka av
-- [ ] Justera systemprompten för det som blir fel. Kör **hela** listan igen efter varje ändring
-- [ ] Frontend-finish: laddningsindikator, felmeddelande om anslutningen bryts, mobilvy, knappen "Gå till bokning" vid resursfrågor
+- [x] Kör testfrågelistan och bocka av
+- [x] Justera systemprompten för det som blir fel. Kör **hela** listan igen efter varje ändring
+- [x] Frontend-finish: laddningsindikator, felmeddelande om anslutningen bryts, mobilvy, knappen "Gå till bokning" vid resursfrågor
 
 **Klart när:** 9 av 10 testfrågor blir rätt (målet i rapporten).
 
@@ -169,6 +169,8 @@ Mina tester
 Framtids säkring
 Säkerhet
 
+Framtid:
+2 olika knowledge-filer, uppdelad på medlem och admin. På så vis blir Nova både ett hjälpmedel för medlemmar kring info på golvet, medan admin-hjälp skulle kunna innebära svar på UX-frågor, tex "hur tar jag bort en användare?", "Hur arkiverar jag en resurs?".
 Rapportdel
 
 Enhetstester

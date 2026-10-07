@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAssistantChat } from "../hooks/useAssistantChat";
 import { useAuth } from "../auth/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const SUGGESTIONS = [
   "Får jag ta med gäster?",
@@ -8,19 +9,20 @@ const SUGGESTIONS = [
   "När kan jag boka mötesrum?",
   "Hur funkar VR-headsetet?",
 ];
-
+const BOOKABLE_WORDS = /\b(mötesrum|skrivbord|vr|headset|ai-server|boka)/i;
 const MAX_QUESTION_LENGTH = 500;
-
 const GRADIENT = "bg-gradient-to-br from-blue-300 via-white to-teal-400";
 
 export default function AssistantWidget() {
-  const { messages, isStreaming, error, send, stop, reset } =
+  const { messages, isStreaming, error, connectionStatus, send, stop, reset } =
     useAssistantChat();
 
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
 
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -75,6 +77,17 @@ export default function AssistantWidget() {
         </div>
       </div>
 
+      {connectionStatus === "reconnecting" && (
+        <div className="bg-amber-100 px-4 py-2 text-xs text-amber-900">
+          Anslutningen bröts. Försöker ansluta igen…
+        </div>
+      )}
+      {connectionStatus === "disconnected" && (
+        <div className="bg-red-100 px-4 py-2 text-xs text-red-800">
+          Ingen anslutning till Nova. Din nästa fråga försöker ansluta igen.
+        </div>
+      )}
+
       {/* Meddelandelista */}
       <div className="flex-1 space-y-3 overflow-y-auto p-4">
         {messages.length === 0 && (
@@ -99,27 +112,60 @@ export default function AssistantWidget() {
 
         {messages
           .filter((m) => m.text !== "")
-          .map((m) => (
-            <div
-              key={m.id}
-              className={
-                m.role === "user" ? "flex justify-end" : "flex justify-start"
-              }
-            >
-              <p
-                className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2 text-sm ${
-                  m.role === "user"
-                    ? "bg-teal-600 text-white"
-                    : "bg-gray-100 text-gray-900"
-                }`}
+          .map((m) => {
+            const isStillStreaming = isStreaming && m.id === lastMessage?.id;
+            const showBookingLink =
+              m.role === "assistant" &&
+              !isStillStreaming &&
+              BOOKABLE_WORDS.test(m.text);
+
+            return (
+              <div
+                key={m.id}
+                className={`flex flex-col ${m.role === "user" ? "items-end" : "items-start"}`}
               >
-                {m.text}
-              </p>
-            </div>
-          ))}
+                <p
+                  className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2 text-sm ${
+                    m.role === "user"
+                      ? "bg-teal-600 text-white"
+                      : "bg-gray-100 text-gray-900"
+                  }`}
+                >
+                  {m.text}
+                </p>
+
+                {showBookingLink && (
+                  <button
+                    onClick={() => {
+                      navigate("/resources");
+                      setIsOpen(false);
+                    }}
+                    className="mt-1 text-xs font-semibold text-teal-700 hover:underline"
+                  >
+                    Gå till bokning →
+                  </button>
+                )}
+              </div>
+            );
+          })}
+
+        {/* {isWaitingForFirstChunk && (
+          <p className="text-sm italic text-gray-500">Nova skriver…</p>
+        )} */}
 
         {isWaitingForFirstChunk && (
-          <p className="text-sm italic text-gray-500">Nova skriver…</p>
+          <div
+            className="flex items-center gap-1 rounded-2xl bg-gray-100 px-4 py-3 w-fit"
+            aria-label="Nova skriver"
+          >
+            {[0, 150, 300].map((delay) => (
+              <span
+                key={delay}
+                className="h-2 w-2 animate-bounce rounded-full bg-teal-600"
+                style={{ animationDelay: `${delay}ms` }}
+              />
+            ))}
+          </div>
         )}
 
         {error && <p className="text-sm text-red-600">{error}</p>}
@@ -144,7 +190,7 @@ export default function AssistantWidget() {
           disabled={isStreaming}
           placeholder="Skriv en egen fråga…"
           aria-label="Din fråga till Nova"
-          className="flex-1 rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-black placeholder-gray-400 transition-colors focus:border-teal-500 focus:bg-gray-100 focus:outline-none disabled:bg-gray-100"
+          className="flex-1 rounded-full border border-gray-300 bg-white px-4 py-2 text-base sm:text-sm text-black placeholder-gray-400 transition-colors focus:border-teal-500 focus:bg-gray-100 focus:outline-none disabled:bg-gray-100"
         />
         {isStreaming ? (
           <button

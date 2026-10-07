@@ -31,7 +31,9 @@ export function ResourcesPage() {
   }, [resourcesQuery.data]);
 
   const today = todayIso();
-  const onlineResourceIds = resources.filter((r) => r.status === "Online").map((r) => r.id);
+  const onlineResourceIds = resources
+    .filter((r) => r.status === "Online")
+    .map((r) => r.id);
   const {
     byResourceId,
     closedForRestOfTodayByResourceId,
@@ -43,24 +45,29 @@ export function ResourcesPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-1">Resurser</h1>
+      <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-1">
+        Boka resurser
+      </h1>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
         Välj en resurstyp för att se lediga tider och boka.
       </p>
 
       {loading && <p className="text-gray-500">Laddar...</p>}
-      {!loading && types.length === 0 && <p className="text-gray-500">Inga resurstyper finns.</p>}
+      {!loading && types.length === 0 && (
+        <p className="text-gray-500">Inga resurstyper finns.</p>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {types.map((type) => {
           const typeResources = resourcesByType.get(type.id) ?? [];
-          const { availableCount, totalCount, closedForRestOfToday } = todayAvailabilitySummary(
-            typeResources.map((r) => r.id),
-            byResourceId,
-            closedForRestOfTodayByResourceId
-          );
+          const { availableCount, totalCount, closedForRestOfToday } =
+            todayAvailabilitySummary(
+              typeResources.map((r) => r.id),
+              byResourceId,
+              closedForRestOfTodayByResourceId,
+            );
           const offlineCount = resources.filter(
-            (r) => r.resourceTypeId === type.id && r.status !== "Online"
+            (r) => r.resourceTypeId === type.id && r.status !== "Online",
           ).length;
           const bookable = typeResources.length > 0;
 
@@ -71,10 +78,14 @@ export function ResourcesPage() {
               disabled={!bookable}
               className="text-left rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-gray-200 dark:disabled:hover:border-gray-800"
             >
-              <h2 className="font-medium text-gray-900 dark:text-gray-100 mb-2">{type.name}</h2>
+              <h2 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
+                {type.name}
+              </h2>
 
               {!bookable && (
-                <p className="text-sm text-gray-400">Inga resurser tillgängliga</p>
+                <p className="text-sm text-gray-400">
+                  Inga resurser tillgängliga
+                </p>
               )}
 
               {bookable && availabilityLoading && (
@@ -85,7 +96,9 @@ export function ResourcesPage() {
                 <>
                   {availableCount === 0 ? (
                     <p className="text-sm text-gray-400">
-                      {closedForRestOfToday ? "Stängt för idag" : "Fullbokat idag"}
+                      {closedForRestOfToday
+                        ? "Stängt för idag"
+                        : "Fullbokat idag"}
                     </p>
                   ) : (
                     <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
@@ -97,7 +110,9 @@ export function ResourcesPage() {
                     </p>
                   )}
                   {offlineCount > 0 && (
-                    <p className="text-xs text-gray-400 mt-1">{offlineCount} otillgängliga</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {offlineCount} otillgängliga
+                    </p>
                   )}
                 </>
               )}

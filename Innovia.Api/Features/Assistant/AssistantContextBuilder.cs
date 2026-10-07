@@ -139,7 +139,7 @@ public sealed class AssistantContextBuilder
                 //3c. Om "null" - kan ej boka
                 if(rule is null)
                 {
-                    sb.AppendLine($"- {dayName}: kan inte bokas.");
+                    sb.AppendLine($"- {dayName}: stängt, kan inte bokas.");
                 } else //3d. Regel finns, ge regelinfo
                 {
                     var opens = rule.OpensAt.ToString("HH:mm");

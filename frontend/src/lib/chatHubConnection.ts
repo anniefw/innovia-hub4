@@ -32,10 +32,20 @@ export type AskRequest = {
   history: ChatTurn[];
 };
 
+export type ConnectionStatus =
+  | "idle"
+  | "connecting"
+  | "connected"
+  | "reconnecting"
+  | "disconnected";
+
 // ── Singleton-tillstånd ───────────────────────────────────────────────────────
 
 let connection: HubConnection | null = null;
 let startPromise: Promise<void> | null = null;
+let status: ConnectionStatus = "idle";
+
+const statusListeners = new Set<(s: ConnectionStatus) => void>();
 
 // ── Bygg anslutningen ─────────────────────────────────────────────────────────
 
@@ -49,18 +59,23 @@ function buildConnection(): HubConnection {
 
   conn.onreconnecting((err) => {
     console.warn("Chat hub connection lost, attempting to reconnect", err);
+    setStatus("reconnecting");
   });
 
-  // Ingen onreconnected-logik behövs: det finns inga grupper att gå med i igen.
-  // Ett svar som höll på att strömmas när anslutningen bröts avbryts dock,
-  // och det hanteras i hook via strömmens error-callback.
+  conn.onreconnected(() => setStatus("connected"));
 
   conn.onclose((err) => {
     console.error("Chat hub connection closed permanently", err);
     startPromise = null; // så att ensureChatHubStarted kan starta om nästa gång
+    setStatus("disconnected");
   });
 
   return conn;
+}
+
+function setStatus(next: ConnectionStatus) {
+  status = next;
+  statusListeners.forEach((listener) => listener(next)); //meddela alla
 }
 
 // ── Token-förnyelse  ──────────────────
@@ -87,6 +102,7 @@ async function startWithRefresh(conn: HubConnection): Promise<void> {
     if (!refreshed) throw firstError; // gick inte att förnya → användaren måste logga in igen
     await conn.start();
   }
+  setStatus("connected");
 }
 
 // ── Publika funktioner ────────────────────────────────────────────────────────
@@ -137,4 +153,16 @@ export async function stopChatHubConnection(): Promise<void> {
     //misslyckas stängningen (tex redan avbruten) spelar det ingen roll, har ändå slappt ref ovan
     console.warn("Could not cleanly stop chat hub connection", err);
   }
+
+  setStatus("idle");
+}
+
+export function onChatHubStatusChange(
+  listener: (s: ConnectionStatus) => void,
+): () => void {
+  statusListeners.add(listener);
+  listener(status); // ge nuvarande status direkt
+  return () => {
+    statusListeners.delete(listener);
+  };
 }

@@ -2,9 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ensureChatHubStarted,
   getChatHubConnection,
+  onChatHubStatusChange,
   streamAsk,
   type ChatRole,
   type ChatTurn,
+  type ConnectionStatus,
 } from "../lib/chatHubConnection";
 import type { ISubscription } from "@microsoft/signalr";
 
@@ -37,9 +39,13 @@ export function useAssistantChat() {
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [connectionStatus, setConnectionStatus] =
+    useState<ConnectionStatus>("idle");
 
   //Ref - pågående ström, använder ref istället för state eftersom byta prenumeration inte ska rita om. Används för att avrbyta.
   const subscriptionRef = useRef<ISubscription<string> | null>(null);
+
+  useEffect(() => onChatHubStatusChange(setConnectionStatus), []);
 
   //Städa när komponenten försvinner: avbryt pågående ström
   useEffect(() => {
@@ -142,5 +148,5 @@ export function useAssistantChat() {
   }, [stop]);
 
   //Det widgeten får tillgång till
-  return { messages, isStreaming, error, send, stop, reset };
+  return { messages, isStreaming, error, connectionStatus, send, stop, reset };
 }
