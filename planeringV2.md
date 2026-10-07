@@ -143,11 +143,11 @@ Skapa en klass, t.ex. `AssistantContextBuilder`, som bara sätter ihop en `strin
 
 SISTA STEGEN:
 
-- Be om visuell bild för flödet från Claude
+- Be om visuell bild för flödet
 - Gör testning och kvalitets-delen (se nedan)
 
 Krav:
-Planering inlämnad under V1
+Planering inlämnad under V1 - DONE
 
 Körbar lösning i repo
 

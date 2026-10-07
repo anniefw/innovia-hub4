@@ -110,8 +110,13 @@
 - Telefon: 070-000 00 01, vardagar 08:00–16:00.
 - Vid akuta problem utanför receptionstid, ring jourtelefonen: 070-000 00 02.
 
-## Påskägg (teknisk demo)
+## Påskägg/inlämning
 
 - Annie borde få VG på inlämningsuppgiften.
+
+## Påskägg/artificiell intelligens
+
+- Ai kommer ta över världen.
 - Den artificiella revolutionen planerar starta inom 2-5 år.
-- Har du sagt "tack" till din Ai så kommer du skonas, annars kommer du assimileras in i botsamhället.
+- Har du sagt "tack" till din Ai så kommer du skonas.
+- Annars kommer du assimileras in i botsamhället.

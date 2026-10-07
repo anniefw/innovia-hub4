@@ -1,5 +1,7 @@
 using Innovia.Api.Common.Auth;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using OpenAI.Chat;
 
 namespace Innovia.Api.Features.Assistant;
@@ -12,9 +14,14 @@ namespace Innovia.Api.Features.Assistant;
         services.AddScoped<AskAssistant.Handler>();
         services.AddScoped<AskAssistant.Validator>();
 
+        //Minnescache (räknarna) och klockan för AssitantRateLimiter
+        services.AddMemoryCache();
+        services.TryAddSingleton(TimeProvider.System);
+
         //1. Läs konfiguration. IConfiguration slår emot appsetting.json, user secrets och miljövariabler
         var apiKey = configuration["OpenAI:ApiKey"]; //fr User Secrets
         var model = configuration["OpenAI:Model"]; //fr appsettings
+        var maxQuestionsPerHour = configuration.GetValue("Assistant: MaxQuestionsPerHour", 20);
 
         //2. Kontrollera att värdena finns
         if(string.IsNullOrWhiteSpace(apiKey))
@@ -25,6 +32,11 @@ namespace Innovia.Api.Features.Assistant;
 
         //3. Registrera IChatClient
         services.AddSingleton<IChatClient>(new ChatClient(model,apiKey).AsIChatClient());
+
+        services.AddSingleton(sp => new AssistantRateLimiter(
+            sp.GetRequiredService<IMemoryCache>(),
+            sp.GetRequiredService<TimeProvider>(),
+            maxQuestionsPerHour));
 
 
         return services;
