@@ -8,6 +8,7 @@ import {
 
 //chatHubConnection.ts håller en delad SignalR-anslutning till Novas chatt (/hubs/chat).
 // Den startar anslutningen och förnyar inloggningen vid behov, skickar frågor till backend och tar emot svaret som en ström av textbitar.
+//Fungerar som ett mellanlager som både pratar med chatHub på backend, och hooken useAssistantChat på frontend.
 
 // ── Konfiguration ─────────────────────────────────────────────────────────────
 const BASE_URL = import.meta.env.VITE_API_URL ?? "https://localhost:7229";

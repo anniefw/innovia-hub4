@@ -11,6 +11,7 @@ import { ResourceTypesAdminPage } from "./pages/admin/ResourceTypesAdminPage";
 import { BookingsAdminPage } from "./pages/admin/BookingsAdminPage";
 import { OccupancyPage } from "./pages/admin/OccupancyPage";
 import { UsersAdminPage } from "./pages/admin/UsersAdminPage";
+import { AssistantForLoggedIn } from "./components/AssistantWidget";
 
 export default function App() {
   return (
@@ -75,11 +76,19 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-            <Route path="/admin/users" element={<ProtectedRoute requireAdmin><UsersAdminPage /></ProtectedRoute>} />
+            <Route
+              path="/admin/users"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <UsersAdminPage />
+                </ProtectedRoute>
+              }
+            />
           </Route>
 
           <Route path="*" element={<Navigate to="/resources" replace />} />
         </Routes>
+        <AssistantForLoggedIn />
       </AuthProvider>
     </BrowserRouter>
   );

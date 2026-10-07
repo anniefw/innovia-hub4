@@ -88,20 +88,20 @@ Skapa en klass, t.ex. `AssistantContextBuilder`, som bara sätter ihop en `strin
 
 **5a. Anslutningen**
 
-- [ ] `lib/chatHubConnection.ts`: kopiera mönstret från `resourceHubConnection.ts`, med ny URL
+- [x] `lib/chatHubConnection.ts`: kopiera mönstret från `resourceHubConnection.ts`, med ny URL
 
 **5b. Hooken**
 
-- [ ] `hooks/useAssistantChat.ts` håller:
+- [x] `hooks/useAssistantChat.ts` håller:
   - `messages`: `{ role: "user" | "assistant", text: string }[]`
   - `isStreaming`
   - `send(question)`: lägger till frågan och ett tomt assistent-meddelande, anropar `connection.stream("Ask", question, history)` och lägger till varje bit i `next` i sista meddelandet
-- [ ] Skicka bara de **senaste ~6 meddelandena** som historik
+- [x] Skicka bara de **senaste ~6 meddelandena** som historik
 
 **5c. Widgeten**
 
-- [ ] `components/AssistantWidget.tsx`: flytande knapp → panel med meddelandelista, förslagsknappar och inmatningsfält
-- [ ] Lägg in den i layouten så att den syns på alla sidor för inloggade
+- [x] `components/AssistantWidget.tsx`: flytande knapp → panel med meddelandelista, förslagsknappar och inmatningsfält
+- [x] Lägg in den i layouten så att den syns på alla sidor för inloggade
 
 **Klart när:** du ställer en fråga i webbläsaren och ser svaret skrivas fram ord för ord.
 
