@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using System.Text;
 using Microsoft.Extensions.AI;
 
 namespace Innovia.Api.Features.Assistant.AskAssistant;
@@ -8,16 +9,19 @@ public sealed class Handler
 {
     //Konstanter
     private const int maxHistoryMessages = 6; //blir dyrt med för många. 
+    public const string FallBackPhrase = "Det hittar jag tyvärr ingen information om";
 
     //Beroenden
     private readonly IChatClient _chatClient; //vägen till AI
     private readonly AssistantContextBuilder _contextBuilder; //texterna + systemprompt
+    private readonly ILogger<Handler> _logger; //loggning
 
     //Konstruktor
-    public Handler(IChatClient chatClient, AssistantContextBuilder contextBuilder)
+    public Handler(IChatClient chatClient, AssistantContextBuilder contextBuilder, ILogger<Handler> logger)
     {
         _chatClient = chatClient;
         _contextBuilder = contextBuilder;
+        _logger = logger;
     }
     // ── Publik metod: helt svar på en gång ────────────────────────────────────
     // Används av POST /assistant/ask (felsökning i Scalar) och av testerna.
@@ -28,6 +32,9 @@ public sealed class Handler
 
         // 2. Skicka till AI:n och VÄNTA på hela svaret
         var response = await _chatClient.GetResponseAsync(messages, cancellationToken: ct);
+
+        //Logga om obesvarat
+        LogIfUnanswered(request.Question, response.Text);
 
         // 3. Returnera all text
         return response.Text;
@@ -46,18 +53,35 @@ public sealed class Handler
         //1. Bygg meddelandelista
         var messages = await BuildMessagesAsync(request, ct);
 
+        //logging
+        var fullAnswer = new StringBuilder();
+
         //2. Be Ai:n om strömmade/streaming svar. "await foreach" = loopa över bitar som kommer in över tid.
         await foreach (var update in _chatClient.GetStreamingResponseAsync(messages, cancellationToken: ct ))
         {
             if(string.IsNullOrEmpty(update.Text))
                 continue;
 
+            //Logga om obesvarat, spara kopia av hela svaret för att kunna logga det i slutet
+            fullAnswer.Append(update.Text);
+
         //3. "Yield return" lämna ut den här biten till den som frågar
             yield return update.Text;
             
         }
 
+        LogIfUnanswered(request.Question, fullAnswer.ToString());
+
         
+    }
+    //Logging
+    private void LogIfUnanswered(string question, string answer)
+    {
+        if (!answer.Contains(FallBackPhrase, StringComparison.OrdinalIgnoreCase))
+        return;
+
+        _logger.LogInformation("Nova kunde inte svara på frågan: {Question}", question);
+
     }
 
     // ── Privat hjälpmetod: bygger meddelandelistan ────────────────────────────

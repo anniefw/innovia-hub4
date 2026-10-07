@@ -19,8 +19,8 @@
 - Huset är öppet för medlemmar vardagar 08:00–16:00.
 - Receptionen är bemannad vardagar 08:00–16:00.
 - Mellan 08:00 och 16:00 kommer du in via receptionen.
-- Det går i speciella fall att boka tider utanför ordinarie öppettider. Mejla receptionen för tillgänglighet.
-- Bokningar utanför ordinarie öppettider kräver en personlig tillträdeskod. Mejla receptionen för att få en kod.
+- Det går i speciella fall att boka tider utanför ordinarie öppettider. Mejla receptionen på reception@innovia.test för tillgänglighet.
+- Bokningar utanför ordinarie öppettider kräver en personlig tillträdeskod. Mejla receptionen på reception@innovia.test för att få en kod.
 - Tillträdeskoden är personlig och får inte delas med andra.
 
 ## Bokning

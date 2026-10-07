@@ -3,6 +3,7 @@ using Innovia.Api.Common.Database;
 using Innovia.Api.Features.Assistant;
 using Innovia.Api.Features.Assistant.AskAssistant;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Logging;
 
 namespace Innovia.Api.Tests.Features.AssistantTests;
 
@@ -16,49 +17,39 @@ public class AskAssistantHandlerTests
         _fixture = fixture;
     }
 
-    // ── Falsk AI-klient ───────────────────────────────────────────────────────
-    // Implementerar samma gränssnitt som den riktiga OpenAI-klienten (IChatClient),
-    // men pratar aldrig med internet. Den:
-    //   1. sparar meddelandelistan den fick → så att vi kan kontrollera den
-    //   2. svarar alltid "Fejksvar"        → så att resultatet är förutsägbart
+    // ══════════════════════════════════════════════════════════════════════════
+    // Testhjälpare
+    // ══════════════════════════════════════════════════════════════════════════
+
     private sealed class FakeChatClient : IChatClient
     {
         public List<ChatMessage> ReceivedMessages { get; private set; } = [];
+
+        public string ResponseText { get; set; } = "Fejksvar";
+        public string[] StreamChunks { get; set; } = ["Ja", "! Du", "", " får ta med", " 2 gäster."];
 
         public Task<ChatResponse> GetResponseAsync(
             IEnumerable<ChatMessage> messages,
             ChatOptions? options = null,
             CancellationToken cancellationToken = default)
         {
-            ReceivedMessages = messages.ToList();   
+            ReceivedMessages = messages.ToList();
             return Task.FromResult(
-                new ChatResponse(new ChatMessage(ChatRole.Assistant, "Fejksvar")));
+                new ChatResponse(new ChatMessage(ChatRole.Assistant, ResponseText)));
         }
 
-        // Bitarna den falska AI:n "streamar". Lägg märke till den TOMMA strängen:
-        // den riktiga OpenAI skickar ibland uppdateringar utan text, och
-        // StreamAsync ska hoppa över dem.
-        public static readonly string[] StreamChunks = ["Ja", "! Du", "", " får ta med", " 2 gäster."];
-
-        // Låtsas-streaming: skickar ut StreamChunks en i taget.
-        // Samma signatur som i IChatClient, med "async" och "yield return".
         public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
             IEnumerable<ChatMessage> messages,
             ChatOptions? options = null,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            ReceivedMessages = messages.ToList();   // spara vad Handlern skickade (som i GetResponseAsync)
+            ReceivedMessages = messages.ToList();
 
             foreach (var chunk in StreamChunks)
             {
-                // Avbrutet? Kasta fel, precis som den riktiga klienten gör
-                cancellationToken.ThrowIfCancellationRequested();
-
+                cancellationToken.ThrowIfCancellationRequested();   
                 yield return new ChatResponseUpdate(ChatRole.Assistant, chunk);
-
-                // Task.Yield = "släpp tråden en kort stund" → beter sig som riktig
-                // asynkron streaming, där bitarna kommer över tid
-                await Task.Yield();
+                await Task.Yield();                                 
             }
         }
 
@@ -66,10 +57,33 @@ public class AskAssistantHandlerTests
         public void Dispose() { }
     }
 
-    private static Handler CreateHandler(AppDbContext context, FakeChatClient fake) =>
-        new(fake, new AssistantContextBuilder(context));
+    private sealed class FakeLogger<T> : ILogger<T>
+    {
+        public List<string> Messages { get; } = [];
 
-    // ── Tester ────────────────────────────────────────────────────────────────
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(
+            LogLevel logLevel, EventId eventId, TState state,
+            Exception? exception, Func<TState, Exception?, string> formatter)
+            => Messages.Add(formatter(state, exception));   // formatter = den färdiga texten
+    }
+    private static Handler CreateHandler(
+        AppDbContext context, FakeChatClient fake, FakeLogger<Handler>? logger = null) =>
+        new(fake, new AssistantContextBuilder(context), logger ?? new FakeLogger<Handler>());
+
+    private static async Task<List<string>> CollectAsync(IAsyncEnumerable<string> stream)
+    {
+        var chunks = new List<string>();
+        await foreach (var chunk in stream)
+            chunks.Add(chunk);
+        return chunks;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // HandleAsync: helt svar
+    // ══════════════════════════════════════════════════════════════════════════
 
     [Fact]
     public async Task Should_Return_Answer_From_ChatClient()
@@ -80,7 +94,6 @@ public class AskAssistantHandlerTests
 
         var answer = await handler.HandleAsync(new Request("Hej?", null), CancellationToken.None);
 
-        // Handlern ska returnera exakt det AI:n svarade
         Assert.Equal("Fejksvar", answer);
     }
 
@@ -96,9 +109,7 @@ public class AskAssistantHandlerTests
         var first = fake.ReceivedMessages.First();
         Assert.Equal(ChatRole.System, first.Role);
 
-        // Reservfrasen finns BARA i systemprompt.md. Den här raden hade fångat
-        // buggen där ReadAssistantFileAsync alltid läste knowledge.md.
-        Assert.Contains("Attans! Det hittar jag tyvärr ingen information om. Här är information till personalen.", first.Text);
+        Assert.Contains(Handler.FallBackPhrase, first.Text);
 
         Assert.Contains("ALLMÄN INFORMATION", first.Text);
     }
@@ -144,7 +155,6 @@ public class AskAssistantHandlerTests
 
         await handler.HandleAsync(new Request("Hur många då?", history), CancellationToken.None);
 
-        // Ordning: [0] system, [1] user, [2] assistant, [3] frågan
         var messages = fake.ReceivedMessages;
         Assert.Equal(4, messages.Count);
 
@@ -180,7 +190,6 @@ public class AskAssistantHandlerTests
         await using var context = _fixture.CreateDbContext();
         var fake = new FakeChatClient();
         var handler = CreateHandler(context, fake);
-
         var history = Enumerable.Range(1, 10)
             .Select(i => new ChatHistory(i % 2 == 0 ? "assistant" : "user", $"Meddelande {i}"))
             .ToList();
@@ -194,15 +203,9 @@ public class AskAssistantHandlerTests
         Assert.Contains(fake.ReceivedMessages, m => m.Text == "Meddelande 10");
     }
 
-        // ── Streaming ─────────────────────────────────────────────────────────────
-
-    private static async Task<List<string>> CollectAsync(IAsyncEnumerable<string> stream)
-    {
-        var chunks = new List<string>();
-        await foreach (var chunk in stream)
-            chunks.Add(chunk);
-        return chunks;
-    }
+    // ══════════════════════════════════════════════════════════════════════════
+    // StreamAsync: svar i bitar
+    // ══════════════════════════════════════════════════════════════════════════
 
     [Fact]
     public async Task Should_Stream_Chunks_In_Order_And_Skip_Empty()
@@ -214,15 +217,12 @@ public class AskAssistantHandlerTests
         var chunks = await CollectAsync(
             handler.StreamAsync(new Request("Får jag ta med gäster?", null), CancellationToken.None));
 
-        // Alla bitar i rätt ordning, UTOM den tomma
         Assert.Equal(["Ja", "! Du", " får ta med", " 2 gäster."], chunks);
     }
 
     [Fact]
     public async Task Should_Use_Same_Message_List_When_Streaming()
     {
-        // Bevisar att StreamAsync och HandleAsync delar BuildMessagesAsync,
-        // så att säkerhet och struktur är identisk i båda.
         await using var context = _fixture.CreateDbContext();
         var fake = new FakeChatClient();
         var handler = CreateHandler(context, fake);
@@ -232,7 +232,7 @@ public class AskAssistantHandlerTests
 
         var first = fake.ReceivedMessages.First();
         Assert.Equal(ChatRole.System, first.Role);
-        Assert.Contains("Det hittar jag tyvärr ingen information om", first.Text);
+        Assert.Contains(Handler.FallBackPhrase, first.Text);
 
         Assert.Single(fake.ReceivedMessages, m => m.Role == ChatRole.System);
 
@@ -248,16 +248,16 @@ public class AskAssistantHandlerTests
 
         var stream = handler.StreamAsync(new Request("Hej", null), CancellationToken.None);
 
-        Assert.Empty(fake.ReceivedMessages);
+        Assert.Empty(fake.ReceivedMessages);     
 
         await CollectAsync(stream);
-        Assert.NotEmpty(fake.ReceivedMessages);
+
+        Assert.NotEmpty(fake.ReceivedMessages);  
     }
 
     [Fact]
     public async Task Should_Stop_Streaming_When_Cancelled()
     {
-        // Simulerar att användaren stänger chatten mitt i ett svar.
         await using var context = _fixture.CreateDbContext();
         var fake = new FakeChatClient();
         var handler = CreateHandler(context, fake);
@@ -274,6 +274,58 @@ public class AskAssistantHandlerTests
             }
         });
 
-        Assert.Equal(["Ja"], received);
+        Assert.Equal(["Ja"], received);  
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Loggning av obesvarade frågor
+    // ══════════════════════════════════════════════════════════════════════════
+
+    [Fact]
+    public async Task Should_Log_Question_When_Answer_Contains_Fallback_Phrase()
+    {
+        await using var context = _fixture.CreateDbContext();
+        var fake = new FakeChatClient
+        {
+            ResponseText = $"Attans! {Handler.FallBackPhrase}. Kontakta receptionen."
+        };
+        var logger = new FakeLogger<Handler>();
+        var handler = CreateHandler(context, fake, logger);
+
+        await handler.HandleAsync(new Request("Kan jag hyra parkering?", null), CancellationToken.None);
+
+        var logged = Assert.Single(logger.Messages);        
+        Assert.Contains("Kan jag hyra parkering?", logged);  
+    }
+
+    [Fact]
+    public async Task Should_Not_Log_When_Nova_Could_Answer()
+    {
+        await using var context = _fixture.CreateDbContext();
+        var fake = new FakeChatClient { ResponseText = "Ja, max 2 gäster per dag." };
+        var logger = new FakeLogger<Handler>();
+        var handler = CreateHandler(context, fake, logger);
+
+        await handler.HandleAsync(new Request("Får jag ta med gäster?", null), CancellationToken.None);
+
+        Assert.Empty(logger.Messages);
+    }
+
+    [Fact]
+    public async Task Should_Log_When_Fallback_Phrase_Is_Split_Across_Stream_Chunks()
+    {
+        await using var context = _fixture.CreateDbContext();
+        var fake = new FakeChatClient
+        {
+            StreamChunks = ["Attans! Det hittar", " jag tyvärr ingen", " information om."]
+        };
+        var logger = new FakeLogger<Handler>();
+        var handler = CreateHandler(context, fake, logger);
+
+        await CollectAsync(
+            handler.StreamAsync(new Request("Vad kostar ett medlemskap?", null), CancellationToken.None));
+
+        var logged = Assert.Single(logger.Messages);
+        Assert.Contains("Vad kostar ett medlemskap?", logged);
     }
 }

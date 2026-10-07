@@ -45,7 +45,8 @@ public sealed class AssistantRateLimiter
 
             //4. Räkna upp och spara. Cachen tar bort posten automatiskt när fönstret går ut så det inte sparas för evigt i minnet.
             var updated = window with {Count = window.Count + 1};
-            _cache.Set(key, updated, updated.StartedAt + Window);
+
+            _cache.Set(key, updated, Window);
 
             return true;
         }

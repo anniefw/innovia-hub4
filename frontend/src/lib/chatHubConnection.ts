@@ -122,3 +122,19 @@ export function streamAsk(
 ): IStreamResult<string> {
   return conn.stream<string>(AskMethod, request);
 }
+
+//Stänger anslutningen helt, anropas vid utloggning
+export async function stopChatHubConnection(): Promise<void> {
+  if (!connection) return; //ingen anslutning skapad - inget att stänga
+
+  const conn = connection;
+  connection = null; //nästa getChatHubConnection bygger ny
+  startPromise = null;
+
+  try {
+    await conn.stop(); //stäng websockets mot servern
+  } catch (err) {
+    //misslyckas stängningen (tex redan avbruten) spelar det ingen roll, har ändå slappt ref ovan
+    console.warn("Could not cleanly stop chat hub connection", err);
+  }
+}

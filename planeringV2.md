@@ -112,10 +112,7 @@ Skapa en klass, t.ex. `AssistantContextBuilder`, som bara sätter ihop en `strin
 - [x] Begränsa antalet frågor per användare (t.ex. 20/timme)
   > ⚠️ **Fälla:** ASP.NET:s inbyggda rate limiter räknar HTTP-anrop, men SignalR håller **en** långlivad anslutning, så limitern ser inte de enskilda frågorna. Räkna själv i Handlern, t.ex. med `IMemoryCache` och användar-id som nyckel.
 - [ ] Logga obesvarade frågor: samla ihop hela svaret under streamingen. Innehåller det reservfrasen → logga frågan med `ILogger`
-- [ ] Kontrollera att inget namn eller ingen e-post skickas till OpenAI
-      6.2 Använd limitern i ChatHub och Endpoint + visa ett vänligt meddelande i frontend ChatHub, Endpoint, hook
-      6.3 Logga obesvarade frågor Handler
-      6.4 GDPR-kontroll + koppla ner SignalR vid utloggning Granskning + AuthContext
+- [x] Kontrollera att inget namn eller ingen e-post skickas till OpenAI
 
 **Klart när:** fråga nr 21 ger ett vänligt "försök igen senare", och obesvarade frågor syns i terminalen.
 
@@ -256,3 +253,17 @@ Vertical slice, IChatClient som gränssnitt (byt leverantör på en rad), Assist
 
 Säkerhet
 User-secrets lokalt, miljövariabel OpenAI\_\_ApiKey i produktion, fail-fast om nyckeln saknas, nyckeln aldrig i frontend, rollskydd i två lager
+Det som skickas Innehåller personuppgifter?
+systemprompt.md ❌ Nej, bara regler
+knowledge.md ❌ Nej, bara information om huset
+Öppettider (AvailabilityRule) ❌ Nej
+Resurser och status (Resource) ❌ Nej, inga bokningar och inga namn på vem som bokat
+Historik (ChatTurn) ⚠️ Bara det användaren själv skrivit i chatten
+Frågan ⚠️ Bara det användaren själv skrivit
+
+Slutsats: systemet skickar aldrig namn, e-post eller användar-id till OpenAI. Användar-id:t används bara internt i rate limitern och lämnar aldrig servern.
+
+Det enda som återstår: en användare kan själv skriva personuppgifter i en fråga, till exempel "Jag heter Anna Svensson, får min gäst Erik komma?". Det kan koden inte förhindra.
+Men
+loggarna bara innehåller frågan, inte vem som ställde den
+loggarna ligger på servern och bör ha en begränsad lagringstid i produktion
