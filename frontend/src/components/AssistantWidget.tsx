@@ -149,10 +149,6 @@ export default function AssistantWidget() {
             );
           })}
 
-        {/* {isWaitingForFirstChunk && (
-          <p className="text-sm italic text-gray-500">Nova skriver…</p>
-        )} */}
-
         {isWaitingForFirstChunk && (
           <div
             className="flex items-center gap-1 rounded-2xl bg-gray-100 px-4 py-3 w-fit"
@@ -173,7 +169,6 @@ export default function AssistantWidget() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Inmatning */}
       <form
         onSubmit={(e) => {
           e.preventDefault();

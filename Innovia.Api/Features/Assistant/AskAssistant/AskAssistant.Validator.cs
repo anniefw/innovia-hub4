@@ -28,8 +28,6 @@ public sealed class Validator
             
             foreach (var turn in request.History)
             {
-                // Bara "user" och "assistant". Stoppar försök att skicka "system".
-                // (Handlern har dessutom sitt eget skydd: dubbel säkerhet.)
                 if (!AllowedRoles.Contains(turn.Role))
                 {
                     errors.Add(new ValidationError(nameof(request.History),

@@ -2,13 +2,6 @@ using Innovia.Api.Common.Auth;
 using Innovia.Api.Common.Result;
 
 namespace Innovia.Api.Features.Assistant.AskAssistant;
-
-
-//Endpointen gör 3 saker innan openAI anropas:
-// Inloggningskontrollen (RequireAuthorization) stoppar okända användare.
-// Valideringen stoppar tomma, för långa eller manipulerade frågor.
-// Först därefter körs Handlern och OpenAI-anropet.
-// Ordningen går från billigast till dyrast. 
 public static class Endpoint
 {
     public static RouteHandlerBuilder Map(IEndpointRouteBuilder app)
