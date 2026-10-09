@@ -6,6 +6,7 @@ public static class Endpoint
 {
     public static RouteHandlerBuilder Map(IEndpointRouteBuilder app)
     {
+        //För felsökning
         return app.MapPost("/ask", async (
             Request request, 
             Handler handler, 
@@ -15,12 +16,10 @@ public static class Endpoint
             CancellationToken ct
         ) =>
         {
-            //validering
             var validation = validator.Validate(request);
             if(!validation.IsValid)
                 return validation.ToProblemResult();
 
-            //Rate limit
             var userId = currentUser.UserId!.Value.ToString();
 
             if (!assistantRateLimiter.TryConsume(userId))
@@ -32,7 +31,6 @@ public static class Endpoint
                 );
             }
             
-            //Anropa handlern
             var answer = await handler.HandleAsync(request, ct);
 
             return Results.Ok(new Response(answer));

@@ -34,7 +34,7 @@ export default function AssistantWidget() {
 
   const canSend = input.trim() !== "" && !isStreaming;
 
-  // ── Stängd: rund flytande boll ──────────────────────────────────────────────
+  //Stängd
   if (!isOpen) {
     return (
       <div className="nova-pulse fixed bottom-6 right-6 z-50">
@@ -50,7 +50,7 @@ export default function AssistantWidget() {
     );
   }
 
-  // ── Öppen: hela panelen ─────────────────────────────────────────────────────
+  //Öppen:
   return (
     <div className="fixed bottom-6 right-6 z-50 flex h-[32rem] w-[calc(100vw-3rem)] max-w-sm flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
       <div

@@ -4,7 +4,6 @@ using Microsoft.Extensions.AI;
 
 namespace Innovia.Api.Features.Assistant.AskAssistant;
 
-//Handlerns uppgift: ta emot en fråga, bygger ihop all information Nova behöver veta, returnerar svaret som sträng
 public sealed class Handler
 {
     private const int maxHistoryMessages = 6;  
@@ -52,8 +51,7 @@ public sealed class Handler
         }
 
         LogIfUnanswered(request.Question, fullAnswer.ToString());
-
-        
+       
     }
 
     private void LogIfUnanswered(string question, string answer)
