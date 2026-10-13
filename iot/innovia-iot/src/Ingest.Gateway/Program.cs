@@ -195,13 +195,15 @@ public class IngestService
     public IngestService(IngestDbContext db, DeviceRegistryClient registry, IRealtimePublisher rt) { _db = db; _registry = registry; _rt = rt; }
     public async Task ProcessAsync(string tenant, MeasurementBatch payload)
     {
+        //Normaliserar till UTC för att undvika problem med olika tidszoner, Npqsql accepterar bara offset 0 för timestamp with timezone
+        var timestampUtc = payload.Timestamp.ToUniversalTime();
         // Resolve tenant and device using DeviceRegistry (tenant slug + device serial)
         var ids = await _registry.ResolveAsync(tenant, payload.DeviceId);
 
         foreach (var m in payload.Metrics)
         {
             _db.Measurements.Add(new MeasurementRow {
-                Time = payload.Timestamp,
+                Time = timestampUtc,
                 TenantId = ids.TenantId,
                 DeviceId = ids.DeviceId,
                 Type = m.Type,
@@ -213,7 +215,7 @@ public class IngestService
         // Publish in realtime
         foreach (var m in payload.Metrics)
         {
-            await _rt.PublishAsync(tenant, ids.DeviceId, m.Type, m.Value, payload.Timestamp);
+            await _rt.PublishAsync(tenant, ids.DeviceId, m.Type, m.Value, timestampUtc);
         }
     }
 }

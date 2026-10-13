@@ -1,10 +1,3 @@
-G-kraven
-
-Steg 3: Registrera tenant och 10 enheter (cirka 30–60 min)
-POST /api/tenants med { "name": "Innovia Hub", "slug": "innovia" }. Spara tenant-GUID:t. Det finns inget GET /api/tenants (README:n ljuger), bara by-slug.
-Skapa 10 enheter (dev-101 till dev-110). Skicka med roomId i bodyn om du väljer den rumskopplingen.
-Klart när: GET /api/tenants/{id}/devices returnerar 10 enheter.
-
 Steg 4: Simulator för 10 enheter (cirka 1–2 h, här finns två buggar)
 Simulatorn är hårdkodad på dev-101. Gör om den till en loop över en lista med 10 serials, och läs gärna listan från config.
 Kör den och titta i Ingest-konsolen. Får du [MQTT] Handler error?
@@ -41,6 +34,7 @@ Utan det här är korten tomma i upp till 10 sekunder efter att sidan laddats. D
 Steg 10: Implementation.md för G och ett test från noll (cirka 1–2 h)
 Stoppa allt och följ dina egna “Så kör du”-instruktioner från början. Det är så läraren kommer att köra projektet.
 Klart när: allt fungerar enbart genom att följa dokumentet.
+
 VG-kraven
 
 Steg 11: Regler i Rules.Engine (cirka 2 h)
