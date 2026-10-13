@@ -21,6 +21,11 @@
 2. Mätvärden sparades inte på grund av tidszon. Edge.Simulator satte lokal tid (+02:00 i Sverige), Ingest.Gateway tog emot meddelandet via MQTT men kunde inte spara då Npgsql (db-rutinen i Ingest.Gateway) endast accepterar offset 0 för kolumntypen timestamp with timezone = inga mätvärden sparades.
    Lösning: En variabel lades till som normaliserar tiden till UTC som sedan används när både mätvärdet sparas och publiceras. Lades till i Ingest.Gateway istället för tex ändringar i Edge.Simulator för att man ska kunna ändra simulatorn till riktiga enheter utan att riskera krasch.
 
+3. Alla mätvärden sparades under samma enhet. Nyckeln var inte unik så första enheten som skickade (dev-101) cachades under "innovia" och alla efterföljande enheter fick sedan dess guid från cachen, så alla mätvärden sparades som dev-101. Det funkade när det bara var en enhet som var hårdkodad och skickade, men förändringen till 10 enheter gjorde detta till en problem.
+   Lösning: Cachenyckeln ändrades till $"{tenantSlug}:{deviceSerial}", så att varje enhet får en egen unik plats i cachen.
+   Verifiering: SELECT "DeviceId", COUNT(\*) FROM "Measurements" GROUP BY "DeviceId";
+   Före: 1 rad (alla 898 mätvärden på dev-101). Efter: 10 rader med lika antal. Felaktig data rensades med TRUNCATE.
+
 Filen beskriver vilka ändringar och var ni har genomfört under projektet
 Ändringar kopplade till G-krav
 

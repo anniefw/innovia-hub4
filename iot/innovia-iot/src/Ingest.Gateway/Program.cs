@@ -237,21 +237,24 @@ public class DeviceRegistryClient
         _cfg = cfg;
     }
 
-    public async Task<(Guid TenantId, Guid DeviceId)> ResolveAsync(string tenantSlug, string deviceSerial)
-    {
-        // Cache lookups so we don't hit DeviceRegistry on every message
-        if (_cache.TryGetValue(tenantSlug, out var hit)) return hit;
+public async Task<(Guid TenantId, Guid DeviceId)> ResolveAsync(string tenantSlug, string deviceSerial)
+{
+    // Nyckeln måste vara unik per ENHET, inte bara per tenant (bugg: alla enheter fick dev-101:s GUID).
+    var cacheKey = $"{tenantSlug}:{deviceSerial}";
 
-        var tenant = await _http.GetFromJsonAsync<TenantDto>($"{_cfg.BaseUrl}/api/tenants/by-slug/{tenantSlug}")
-                    ?? throw new InvalidOperationException($"Tenant slug '{tenantSlug}' not found");
+    // Cache lookups so we don't hit DeviceRegistry on every message
+    if (_cache.TryGetValue(cacheKey, out var hit)) return hit;                      
 
-        var device = await _http.GetFromJsonAsync<DeviceDto>($"{_cfg.BaseUrl}/api/tenants/{tenant.Id}/devices/by-serial/{deviceSerial}")
-                    ?? throw new InvalidOperationException($"Device serial '{deviceSerial}' not found in tenant '{tenantSlug}'");
+    var tenant = await _http.GetFromJsonAsync<TenantDto>($"{_cfg.BaseUrl}/api/tenants/by-slug/{tenantSlug}")      
+                ?? throw new InvalidOperationException($"Tenant slug '{tenantSlug}' not found");                   
 
-        var ids = (tenant.Id, device.Id);
-        _cache[tenantSlug] = ids;
-        return ids;
-    }
+    var device = await _http.GetFromJsonAsync<DeviceDto>($"{_cfg.BaseUrl}/api/tenants/{tenant.Id}/devices/by-serial/{deviceSerial}")
+                ?? throw new InvalidOperationException($"Device serial '{deviceSerial}' not found in tenant '{tenantSlug}'"); 
+
+    var ids = (tenant.Id, device.Id);
+    _cache[cacheKey] = ids;                                                         
+    return ids;
+}
 
     private record TenantDto(Guid Id, string Name, string Slug);
     private record DeviceDto(Guid Id, Guid TenantId, Guid? RoomId, string Model, string Serial, string Status);
