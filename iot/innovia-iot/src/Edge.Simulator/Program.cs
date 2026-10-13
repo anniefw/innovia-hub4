@@ -64,7 +64,7 @@ while (true)
     // Kortare loggrad än originalet – 10 hela JSON-rader var 5:e sekund blir oläsligt
     Console.WriteLine($"[{DateTimeOffset.UtcNow:HH:mm:ss}] {serial} → {topic}");
     // Vänta EFTER att alla 10 skickats – inte mellan varje enhet
-    await Task.Delay(interval);
     }
+    await Task.Delay(interval);
 
 }

@@ -1,20 +1,34 @@
+## Portlista
+
+#### Tjänst Port
+
+    Min Postgres (innovia_postgres)	        5433
+    IoT TimescaleDB (deploy-db-1)	        5432
+    Mosquitto	                            1883
+    Redis (används inte av någon tjänst)	6379
+    DeviceRegistry.Api	                    5101
+    Ingest.Gateway	                        5102
+    Realtime.Hub	                        5103
+    Portal.Adapter	                        5104
+
+### Startordning
+
+## Buggar/problem som fixats under projektet
+
+1. Realtime.Hub refererade ett föråldrat SignalR-paket, (ett paket från .NET Core 2.x). Paketet var onödigt och drog in gamla, sårbara beroenden (byggvarningar NU190x).
+   Lösning: Paketreferensen togs bort.
+
+2. Mätvärden sparades inte på grund av tidszon. Edge.Simulator satte lokal tid (+02:00 i Sverige), Ingest.Gateway tog emot meddelandet via MQTT men kunde inte spara då Npgsql (db-rutinen i Ingest.Gateway) endast accepterar offset 0 för kolumntypen timestamp with timezone = inga mätvärden sparades.
+   Lösning: En variabel lades till som normaliserar tiden till UTC som sedan används när både mätvärdet sparas och publiceras. Lades till i Ingest.Gateway istället för tex ändringar i Edge.Simulator för att man ska kunna ändra simulatorn till riktiga enheter utan att riskera krasch.
+
 Filen beskriver vilka ändringar och var ni har genomfört under projektet
-
-Ändringar:
-
-1. Ändrade port för innovias databas för att inte krocka med portarna i IoT-repot.
-2. Realtime.Hub.csproj: Tog bort Microsoft.AspNetCore.SignalR 1.1.0. Paketet är från .NET Core 2.x, och SignalR-servern ingår redan i Microsoft.NET.Sdk.Web. Det gamla paketet drog in sårbara transitiva beroenden (byggvarningar NU190x).
-3.
-
 Ändringar kopplade till G-krav
 
-- Minst 10 registrerade enheter i DeviceRegistry.
-- Alla enheter ska ta emot mock-data via Edge.Simulator.
+- Minst 10 registrerade enheter i DeviceRegistry. KLAR
+- Alla enheter ska ta emot mock-data via Edge.Simulator. KLAR
 - Alla enheter ska kunna hämtas via DeviceRegistry API och visas i er egen portal.
 - Realtidsdata ska presenteras för enheterna med hjälp av SignalR + Realtime.Hub i er egen portal.
-
-Ändringar kopplade till VG-krav
-
+  Ändringar kopplade till VG-krav
 - Bygga en enkel prototyp av Rules.Engine som:
 - Låter en regel skapas för en enhet (t.ex. ”om temperaturen är högre än 28°C”).
 - När mätvärden kommer in (via Ingest och Edge.Simulator), utvärderas regeln.
@@ -24,6 +38,32 @@ Filen beskriver vilka ändringar och var ni har genomfört under projektet
 - Utvärdering: Regeln jämför senaste mätvärdet för enheten mot ett tröskelvärde.
 - Alert: Om tröskeln överskrids skickas ett SignalR-event (alertRaised) till tenantens grupp i Realtime.Hub.
 - Implementering i ert projekt: Plattformen kan ta emot alertRaised och skriva ut varningen i UI:t.
+
+## Ändringar som gjorts för att uppfylla kraven
+
+1. Innovias databas flyttad till port 5433 då både Innovias db och IoT-tjänsterna TimescaleDb ville använda samma port (5432).
+
+2. Seed-skript tillagt för tenant innovia och enheterna dev-101 - dev-110. Kopplingen är att varje enhets roomId sätts till ett resourceId från Innovias Db. Id:t slås upp via resurserns namn. Skriptet kontrollerar även vad som redan finns och skapar bara det som saknas för att inte skapa dubletter om det körs flera gånger.
+
+3. Edge.simulatorn skickade bara data för en hårdkodad enhet (dev-101). Då krav är att alla 10 enheter ska få data minst var 10e sekund så lades en array till med de olika serials. En foreach-loop inne i while skickade ett meddelande per enhet, och de hårdkodade variablerna byttes ut mot {serials}-variabler. Intervallet är också sänkt från 10 s till 9s, eftersom ett intervall dessutom tar tiden att publicera 10 meddelande.
+   Ytterligare ett tillägg här var att AI-serverrummet (dev-105) skickar högre temperaturer. Temperaturen avrundas till en decimal, och loggraden förkortades för att göra det enklare att läsa. Lokal tid är medvetet kvar eftersom det då bevisar att buggen som löstes i 2an funkar, där den lokala tiden normaliseras till utc.
+
+### Upptäckta – ej åtgärdade
+
+| #   | Tjänst             | Brist                                                                          | Konsekvens                                                                                                                        |
+| --- | ------------------ | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| 3   | Realtime.Hub       | Saknar Swagger                                                                 | Uppgiften kräver Swagger för varje tjänst. En SignalR-hubb är dock inte REST och kan inte beskrivas i Swagger på samma sätt       |
+| 4   | Ingest.Gateway     | `HubConnection.StartAsync()` vid uppstart saknar try/catch                     | Ingest.Gateway kraschar om Realtime.Hub inte är igång, så startordningen är avgörande                                             |
+| 5   | Ingest.Gateway     | MQTT-hanteraren loggar bara `ex.Message`                                       | Den verkliga orsaken (inner exception) syns inte, vilket försvårade felsökningen av tidszonsbuggen                                |
+| 6   | DeviceRegistry.Api | POST-endpoints tar emot entiteterna `Tenant`/`Device` direkt (mass assignment) | Klienten kan sätta `Id` själv. Swaggers exempelbody fyller i ett fast platshållar-GUID, vilket orsakade en dubblett under arbetet |
+| 7   | DeviceRegistry.Api | Unikhetsbrott (Postgres `23505`) fångas inte                                   | En dubblett ger `500 Internal Server Error` i stället för `409 Conflict`                                                          |
+| 8   | DeviceRegistry.Api | `Slug` och `Serial` saknar unique-index                                        | Två tenants med samma slug kan skapas, och `by-slug` returnerar då en godtycklig av dem                                           |
+| 9   | DeviceRegistry.Api | README nämner `GET /api/tenants`                                               | Endpointen finns inte                                                                                                             |
+| 10  | deploy             | `docker-compose.yml` saknar namngiven volym för databasen                      | `docker compose down` raderar all IoT-data                                                                                        |
+| 11  | deploy             | Redis startas                                                                  | Ingen tjänst använder Redis                                                                                                       |
+| 12  | Innovia.Shared     | Innehåller oanvända klasser (`Measurement`, `SensorKind`)                      | Varje tjänst har i stället en egen kopia av `MeasurementRow`, vilket är teknisk skuld                                             |
+
+---
 
 ## Systemets mikrotjänster
 
@@ -52,16 +92,3 @@ Worker service som kan hantera regler och generera alerts baserat på inkommande
 ### Edge.Simulator
 
 En konsolapp som simulerar IoT-enheter och skickar data via MQTT. Används för att testa utan fysisk hårdvara.
-
-## Portlista
-
-#### Tjänst Port
-
-    Min Postgres (innovia_postgres)	        5433
-    IoT TimescaleDB (deploy-db-1)	        5432
-    Mosquitto	                            1883
-    Redis (används inte av någon tjänst)	6379
-    DeviceRegistry.Api	                    5101
-    Ingest.Gateway	                        5102
-    Realtime.Hub	                        5103
-    Portal.Adapter	                        5104
