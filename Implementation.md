@@ -53,6 +53,15 @@ Filen beskriver vilka ändringar och var ni har genomfört under projektet
 3. Edge.simulatorn skickade bara data för en hårdkodad enhet (dev-101). Då krav är att alla 10 enheter ska få data minst var 10e sekund så lades en array till med de olika serials. En foreach-loop inne i while skickade ett meddelande per enhet, och de hårdkodade variablerna byttes ut mot {serials}-variabler. Intervallet är också sänkt från 10 s till 9s, eftersom ett intervall dessutom tar tiden att publicera 10 meddelande.
    Ytterligare ett tillägg här var att AI-serverrummet (dev-105) skickar högre temperaturer. Temperaturen avrundas till en decimal, och loggraden förkortades för att göra det enklare att läsa. Lokal tid är medvetet kvar eftersom det då bevisar att buggen som löstes i 2an funkar, där den lokala tiden normaliseras till utc.
 
+4. Backend: Ny feature (sensor)
+   Ny endpoint GET /sensors i Innovia.Api (Features/Sensors). Hämtar listan med alla 10 sensorer och visar vilket rum varje sensor sitter i, tex dev-101 - Mötesrum 1. Endpointen används av sensorsidan i frontend.
+   Typad Httpklient som samlar all kommunikation med DeviceRegistry.Api (DeviceRegistryClient). Om DeviceRegistry.Api ändrar sitt format behöver bara backend anpassas, inte frontend.
+   Handlern slår upp tenant via slug (konfigurerad i appsettings.json, eftersom GUID skiljer sig mellan maskiner), hämtar enheterna och kopplar varje RoomId till Resource.Name i en enda databasfråga (undviker N+1).
+   Egna Response-records, så att frontend inte är beroende av DeviceRegistry.Apis format.
+   Felhantering: Om DeviceRegistry.Api är avstängd eller inte svarar inom 5 sekunder får användaren ett tydligt meddelande ("Sensortjänsten är inte tillgänglig just nu") med statuskod 503, i stället för att appen kraschar. För detta lades en ny feltyp till i projektets felhantering.En felkonfigurerad tenant ger 500.
+   Behörighet: AdminOnly.
+   Testat: 200 med 10 sensorer och rumsnamn vid inloggning som admin, 401 utan inloggning, 503 med DeviceRegistry.Api avstängd.
+
 ### Upptäckta – ej åtgärdade
 
 | #   | Tjänst             | Brist                                                                          | Konsekvens                                                                                                                        |
@@ -68,7 +77,7 @@ Filen beskriver vilka ändringar och var ni har genomfört under projektet
 | 11  | deploy             | Redis startas                                                                  | Ingen tjänst använder Redis                                                                                                       |
 | 12  | Innovia.Shared     | Innehåller oanvända klasser (`Measurement`, `SensorKind`)                      | Varje tjänst har i stället en egen kopia av `MeasurementRow`, vilket är teknisk skuld                                             |
 
----
+## Realtime.Hub – ingen autentisering: Alla klienter kan anropa JoinTenant (lyssna på valfri tenant) och PublishMeasurement (skicka falska mätvärden till alla anslutna).
 
 ## Systemets mikrotjänster
 

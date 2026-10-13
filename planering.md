@@ -1,11 +1,3 @@
-Steg 4: Simulator för 10 enheter (cirka 1–2 h, här finns två buggar)
-Simulatorn är hårdkodad på dev-101. Gör om den till en loop över en lista med 10 serials, och läs gärna listan från config.
-Kör den och titta i Ingest-konsolen. Får du [MQTT] Handler error?
-Svar: ja. Simulatorn skickar DateTimeOffset.Now, alltså +02:00, och Npgsql vägrar spara andra offsets än UTC i timestamptz. Det finns två sätt att lösa det: skicka UTC från simulatorn, eller normalisera med .ToUniversalTime() i Ingest. Normalisering i Ingest är robustare, eftersom riktiga enheter också kan skicka lokal tid.
-Kontrollera med /ingest/debug/device/{guid} för flera olika enheter. Hamnar alla mätvärden på samma enhet?
-Svar: ja. DeviceRegistryClient.ResolveAsync cachar på bara tenantSlug, så den första enhetens GUID återanvänds för alla. Cachenyckeln måste innehålla både slug och serial. Det här är förmodligen den viktigaste buggen att visa på demon.
-Klart när: alla 10 enheter har egna, nya mätvärden var 10:e sekund.
-
 Steg 5: Testa realtid utan din app (cirka 30 min)
 Öppna client/index.html med Live Server (port 5500, som är den port CORS redan tillåter) och kontrollera att measurementReceived loggas i konsolen.
 Om något sedan krånglar i din app vet du då att felet sitter hos dig och inte i IoT-tjänsterna.
