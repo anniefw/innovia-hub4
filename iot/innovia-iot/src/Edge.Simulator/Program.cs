@@ -22,22 +22,37 @@ catch (Exception ex)
     throw;
 }
 
+var serials = Enumerable.Range(101,10)
+    .Select(n => $"dev-{n}")
+    .ToArray();
+
+const string serverRoomSerial = "dev-105";
+
+var interval = TimeSpan.FromSeconds(9);
+
 var rand = new Random();
 while (true)
 {
+    foreach (var serial in serials)
+    {
+        var temperature = serial == serverRoomSerial
+        ? 26.0 + rand.NextDouble()*4.0 //AI-serverrum 26-30 c
+        : 26.0 + rand.NextDouble(); //Övriga rum 21,5 - 22,5 c
+
     var payload = new
     {
-        deviceId = "dev-101",
-        apiKey = "dev-101-key",
+        deviceId = serial,
+        apiKey = $"{serial}-key", 
         timestamp = DateTimeOffset.Now,
         metrics = new object[]
         {
             new { type = "temperature", value = 21.5 + rand.NextDouble(), unit = "C" },
             new { type = "co2", value = 900 + rand.Next(0, 700), unit = "ppm" }
         }
-    };
-
-    var topic = "tenants/innovia/devices/dev-101/measurements";
+    
+};
+    //topic måste innehålla rätt serial (ingest.gateway läser ur topic)
+    var topic = $"tenants/innovia/devices/{serial}/measurements";
     var json = JsonSerializer.Serialize(payload);
 
     var message = new MqttApplicationMessageBuilder()
@@ -46,6 +61,10 @@ while (true)
         .Build();
 
     await client.PublishAsync(message);
-    Console.WriteLine($"[{DateTimeOffset.UtcNow:o}] Published to '{topic}': {json}");
-    await Task.Delay(TimeSpan.FromSeconds(10));
+    // Kortare loggrad än originalet – 10 hela JSON-rader var 5:e sekund blir oläsligt
+    Console.WriteLine($"[{DateTimeOffset.UtcNow:HH:mm:ss}] {serial} → {topic}");
+    // Vänta EFTER att alla 10 skickats – inte mellan varje enhet
+    await Task.Delay(interval);
+    }
+
 }
