@@ -91,3 +91,13 @@ export type RangeOccupancy = {
     percentage: number;
   }[];
 };
+
+export type Sensor = {
+  id: string;
+  serial: string;
+  model: string;
+  status: string;
+  roomId: string | null;
+  roomName: string;
+  roomType: string;
+};

@@ -1,14 +1,3 @@
-Steg 5: Testa realtid utan din app (cirka 30 min)
-Öppna client/index.html med Live Server (port 5500, som är den port CORS redan tillåter) och kontrollera att measurementReceived loggas i konsolen.
-Om något sedan krånglar i din app vet du då att felet sitter hos dig och inte i IoT-tjänsterna.
-Klart när: konsolen visar live-värden för olika deviceId.
-
-Steg 6: Backend-slicen Features/Sensors/ListSensors (cirka 2–3 h)
-IDeviceRegistryClient som typad HttpClient. BaseUrl och TenantId läggs i appsettings.json under en egen sektion.
-Handler, Endpoint och Response enligt ert vanliga mönster, med egna Response-records i stället för DeviceRegistrys DTO:er.
-Om DeviceRegistry ligger nere: vad ska din endpoint svara? Svar: ett kontrollerat fel via din Result-typ, till exempel 503 Service Unavailable, inte en 500 med stacktrace. Fånga HttpRequestException i klienten.
-Klart när: din egen endpoint returnerar de 10 enheterna i Swagger eller Scalar.
-
 Steg 7: Sensorsidan i frontend, bara listan (cirka 2 h)
 api/sensors.ts, hooks/useSensors.ts, SensorsPage.tsx, en route och en länk i navigationen.
 Klart när: sidan visar 10 kort med till exempel serial, modell och rum, med “–” som värde.

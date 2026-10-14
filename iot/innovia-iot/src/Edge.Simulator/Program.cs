@@ -22,7 +22,7 @@ catch (Exception ex)
     throw;
 }
 
-var serials = Enumerable.Range(101, 10)
+var serials = Enumerable.Range(101, 20)
     .Select(n => $"dev-{n}")
     .ToArray();
 

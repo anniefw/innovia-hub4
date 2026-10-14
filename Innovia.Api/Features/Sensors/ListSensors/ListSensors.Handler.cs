@@ -28,10 +28,10 @@ public sealed class Handler
         try
         {
             //Frågar registry vilken tenant heter TenantSlug(dvs innovia)
-            var tenant = await _registry.GetTenantBySlugAsync(_options.TenantSlug, ct);    
+            var tenant = await _registry.GetTenantBySlugAsync(_options.TenantSlug, ct);
             // tenant = [{ Id: dbdc9044…, Name: "Innovia Hub", Slug: "innovia" }]  eller null
-            
-            if(tenant is null)
+
+            if (tenant is null)
                 return Result<List<Response>>.Fail(SensorErrors.TenantNotConfigured);
 
             //Frågar registry vilka devices finns på den tenanten vi hämtade 
@@ -42,12 +42,14 @@ public sealed class Handler
             //   … totalt 10 st
             // ]
 
-        } catch (HttpRequestException)
+        }
+        catch (HttpRequestException)
         {
             // Hit kommer vi om HTTP-anropet misslyckas helt (t.ex. "connection refused"),
             // eller om DeviceRegistry svarar med ett fel (500) → EnsureSuccessStatusCode() kastar.
             return Result<List<Response>>.Fail(SensorErrors.RegistryUnavailable);
-        } catch(TaskCanceledException) when (!ct.IsCancellationRequested)
+        }
+        catch (TaskCanceledException) when (!ct.IsCancellationRequested)
         {
             return Result<List<Response>>.Fail(SensorErrors.RegistryUnavailable);
         }
@@ -63,46 +65,58 @@ public sealed class Handler
             .Select(d => d.RoomId!.Value) //Välj rummen som har Guid
             .Distinct() //ta bort dubeletter
             .ToList();
-            // roomIds = [ 01a07b3f…, 01a07b40…, …, 10 olika rum-GUID ]
+        // roomIds = [ 01a07b3f…, 01a07b40…, …, 10 olika rum-GUID ]
 
         // STEG 4: Hämta namnen för de rummen från _context.Resources i EN fråga
         // I tabellen Resources:
         // ta bara de rader vars Id finns i roomIds-listan
         // bygg en "uppslagsbok" (Dictionary): Id → Name
         // EF Core översätter detta till SQL: SELECT "Id", "Name" FROM "Resources" WHERE "Id" IN (01a07b3f…, 01a07b40…, …)
-        var roomNames = await _context.Resources //Från resurser i databasen
-            .AsNoTracking()
-            .Where(r => roomIds.Contains(r.Id)) //hämta de rum som har Id
-            .ToDictionaryAsync(r => r.Id, r => r.Name, ct); //lägg till dem i "uppslagsverk där de ska ha Id och Namn
-            // roomNames = {
-            //   01a07b3f… → "Mötesrum 1",
-            //   01a07b40… → "Mötesrum 2",
-            //   …
-            // }
+        var rooms = await (
+                from r in _context.Resources.AsNoTracking()
+                join rt in _context.ResourceTypes.AsNoTracking()
+                    on r.ResourceTypeId equals rt.Id
+                where roomIds.Contains(r.Id)
+                select new { r.Id, r.Name, TypeName = rt.Name }
+            )
+            .ToDictionaryAsync(x => x.Id, ct);
+        // roomNames = {
+        //   01a07b3f… → "Mötesrum 1",
+        //   01a07b40… → "Mötesrum 2",
+        //   …
+        // }
 
         // STEG 5: Mappa och sortera på serial
         // För varje sensor:
         // skapa en Response med sensorns uppgifter
         // RUMSNAMN:
         var sensors = devices
-            .Select(d => new Response(
-                d.Id,
-                d.Serial,
-                d.Model,
-                d.Status,
-                d.RoomId,
-                //d.RoomId is Guid roomId är pattern matching: “om RoomId har ett värde, lägg det i variabeln roomId”
-                d.RoomId is Guid roomId && roomNames.TryGetValue(roomId, out var name)
-                ? name //OM sensorn har ett RoomId OCH det finns i uppslagsboken → använd namnet därifrån ["Mötesrum 1"]
-                : "Okänt rum"  // ANNARS → "Okänt rum"
-                ))
-                .OrderBy(s => s.Serial) // Sortera listan på Serial (dev-101, dev-102, …)
-                .ToList();
-                // sensors = [
-                //   { Id: f2fd3c1d…, Serial: "dev-101", Model: "Acme CO2-Temp", RoomName: "Mötesrum 1", … },
-                //   { Id: b857ae38…, Serial: "dev-102", Model: "Acme CO2-Temp", RoomName: "Mötesrum 2", … },
-                //   …
-                // ]
+            .Select(d =>
+            {
+                // Försök hitta rummet. room blir null om RoomId saknas eller inte finns i databasen.
+                var room = d.RoomId is Guid roomId && rooms.TryGetValue(roomId, out var found)
+                    ? found
+                    : null;
+
+                return new Response(
+                    d.Id,
+                    d.Serial,
+                    d.Model,
+                    d.Status,
+                    d.RoomId,
+                    room?.Name ?? "Okänt rum",
+                    room?.TypeName ?? "Okänd"
+                );
+            })
+            .OrderBy(s => s.Serial)
+            .ToList();
+
+        return Result<List<Response>>.Ok(sensors);
+        // sensors = [
+        //   { Id: f2fd3c1d…, Serial: "dev-101", Model: "Acme CO2-Temp", RoomName: "Mötesrum 1", … },
+        //   { Id: b857ae38…, Serial: "dev-102", Model: "Acme CO2-Temp", RoomName: "Mötesrum 2", … },
+        //   …
+        // ]
 
         // STEG 6: returnera Result<List<Response>>.Ok(...)
 

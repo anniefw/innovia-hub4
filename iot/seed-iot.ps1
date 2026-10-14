@@ -48,7 +48,17 @@ $devices = @(
     @{ serial = "dev-107"; model = "Acme CO2-Temp";    room = "Drop-in skrivbord 4" },
     @{ serial = "dev-108"; model = "Acme CO2-Temp";    room = "Drop-in skrivbord 7" },
     @{ serial = "dev-109"; model = "Acme CO2-Temp";    room = "Drop-in skrivbord 10" },
-    @{ serial = "dev-110"; model = "Acme CO2-Temp";    room = "Drop-in skrivbord 13" }
+    @{ serial = "dev-110"; model = "Acme CO2-Temp";    room = "Drop-in skrivbord 13" },
+    @{ serial = "dev-111"; model = "Acme CO2-Temp";    room = "Drop-in skrivbord 2" },
+    @{ serial = "dev-112"; model = "Acme CO2-Temp";    room = "Drop-in skrivbord 3" },
+    @{ serial = "dev-113"; model = "Acme CO2-Temp";    room = "Drop-in skrivbord 5" },
+    @{ serial = "dev-114"; model = "Acme CO2-Temp";    room = "Drop-in skrivbord 6" },
+    @{ serial = "dev-115"; model = "Acme CO2-Temp";    room = "Drop-in skrivbord 8" },
+    @{ serial = "dev-116"; model = "Acme CO2-Temp";    room = "Drop-in skrivbord 9" },
+    @{ serial = "dev-117"; model = "Acme CO2-Temp";    room = "Drop-in skrivbord 11" },
+    @{ serial = "dev-118"; model = "Acme CO2-Temp";    room = "Drop-in skrivbord 12" },
+    @{ serial = "dev-119"; model = "Acme CO2-Temp";    room = "Drop-in skrivbord 14" },
+    @{ serial = "dev-120"; model = "Acme CO2-Temp";    room = "Drop-in skrivbord 15" }
 )
 
 foreach ($d in $devices) {
