@@ -49,11 +49,11 @@ Filen beskriver vilka ändringar och var ni har genomfört under projektet
 1. Innovias databas flyttad till port 5433 då både Innovias db och IoT-tjänsterna TimescaleDb ville använda samma port (5432).
 
 2. Seed-skript tillagt för tenant innovia och enheterna dev-101 - dev-110. Kopplingen är att varje enhets roomId sätts till ett resourceId från Innovias Db. Id:t slås upp via resurserns namn. Skriptet kontrollerar även vad som redan finns och skapar bara det som saknas för att inte skapa dubletter om det körs flera gånger.
-   Tillägg: Jag valde senare att lägga till samtliga resurser från Innovia (förutom VR-headset som inte är ett rum i sig).
+   Tillägg: Jag valde senare att lägga till samtliga resurser från Innovia (förutom VR-headset som inte är ett rum i sig), se 5.
 
 3. Edge.simulatorn skickade bara data för en hårdkodad enhet (dev-101). Då krav är att alla 10 enheter ska få data minst var 10e sekund så lades en array till med de olika serials. En foreach-loop inne i while skickade ett meddelande per enhet, och de hårdkodade variablerna byttes ut mot {serials}-variabler. Intervallet är också sänkt från 10 s till 9s, eftersom ett intervall dessutom tar tiden att publicera 10 meddelande.
    Ytterligare ett tillägg här var att AI-serverrummet (dev-105) skickar högre temperaturer. Temperaturen avrundas till en decimal, och loggraden förkortades för att göra det enklare att läsa. Lokal tid är medvetet kvar eftersom det då bevisar att buggen som löstes i 2an funkar, där den lokala tiden normaliseras till utc.
-   Tillägg: Jag valde senare att lägga till samtliga resurser från Innovia (förutom VR-headset som inte är ett rum i sig).
+   Tillägg: Jag valde senare att lägga till samtliga resurser från Innovia (förutom VR-headset som inte är ett rum i sig), se 5.
 
 4. Backend: Ny feature (sensor)
    Ny endpoint GET /sensors i Innovia.Api (Features/Sensors). Hämtar listan med alla 10 sensorer och visar vilket rum varje sensor sitter i, tex dev-101 - Mötesrum 1. Endpointen används av sensorsidan i frontend.
@@ -63,6 +63,12 @@ Filen beskriver vilka ändringar och var ni har genomfört under projektet
    Felhantering: Om DeviceRegistry.Api är avstängd eller inte svarar inom 5 sekunder får användaren ett tydligt meddelande ("Sensortjänsten är inte tillgänglig just nu") med statuskod 503, i stället för att appen kraschar. För detta lades en ny feltyp till i projektets felhantering.En felkonfigurerad tenant ger 500.
    Behörighet: AdminOnly.
    Testat: 200 med 10 sensorer och rumsnamn vid inloggning som admin, 401 utan inloggning, 503 med DeviceRegistry.Api avstängd.
+
+5. Utökning till 20 sensorer: Sensorer finns i alla mötesrum (4), vid alla drop-in-skrivbord (15) och i AI-serverrummet (1). VR-headset fick inga sensorer, eftersom en temperatur- och CO₂-sensor mäter luften i ett rum och inte passar på en bärbar enhet. Ändringen krävde bara två justeringar (seed-skriptet och antalet i Edge.Simulator). Backend och frontend hanterar ett godtyckligt antal sensorer.
+   Gruppering: Sensorsidan visar sensorerna under rubriker per resurstyp. Typen hämtas från databasen i backend (inte gissas från rumsnamnet), och skrivbord sorteras i naturlig ordning (2 före 10).
+   6. Lade till en ny sida i frontend som endast är för Admin där samtliga resurser (förutom VR-headset) syns som kort med sensorinformation.
+
+   7. Realtidsdata: Ändrade CORS på RealtimeHub att tillåta min frontend, skapade anslutning till RealtimeHub från frontend, en hook som tar emot och sparar värden samt visar ut livedata-värden på sensorkorten i frontend.
 
 ### Upptäckta – ej åtgärdade
 

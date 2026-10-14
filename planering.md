@@ -1,7 +1,3 @@
-Steg 7: Sensorsidan i frontend, bara listan (cirka 2 h)
-api/sensors.ts, hooks/useSensors.ts, SensorsPage.tsx, en route och en länk i navigationen.
-Klart när: sidan visar 10 kort med till exempel serial, modell och rum, med “–” som värde.
-
 Steg 8: Realtid i frontend (cirka 2–3 h)
 Lägg till din Vite-origin (troligen http://localhost:5173) i CORS-policyn i Realtime.Hub.
 lib/sensorHubConnection.ts (samma mönster som resourceHubConnection.ts): anslut, JoinTenant("innovia") och joina igen vid reconnect.
@@ -36,3 +32,8 @@ Lyssna på alertRaised i samma sensorHubConnection och visa en banner eller toas
 Tips för demon: sätt en regel som “temperature > 22” så att den slår till direkt.
 
 Steg 15: Implementation.md för VG och genrep (cirka 1–2 h)
+
+Fundering:
+lägg till en rubrik högst upp i sensorer: Alla mätvärden är inom godkända spann. Vid alerts/fel ändras denna till att tyliggöra tex "AI-servern har icke godkända mätvärden. Grön text vid godkända mätvärden, gul text lätt förhöjd, röd text inte acceptabelt.
+
+Fundering: Går det visa mätvärden i ett "roligare" kort eller mer kreativt? Cirklar?

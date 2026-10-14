@@ -3,31 +3,23 @@ using Innovia.Api.Common.Result;
 
 namespace Innovia.Api.Features.Assistant.AskAssistant;
 
-
-//Endpointen gör 3 saker innan openAI anropas:
-// Inloggningskontrollen (RequireAuthorization) stoppar okända användare.
-// Valideringen stoppar tomma, för långa eller manipulerade frågor.
-// Först därefter körs Handlern och OpenAI-anropet.
-// Ordningen går från billigast till dyrast. 
 public static class Endpoint
 {
     public static RouteHandlerBuilder Map(IEndpointRouteBuilder app)
     {
         return app.MapPost("/ask", async (
-            Request request, 
-            Handler handler, 
-            Validator validator, 
+            Request request,
+            Handler handler,
+            Validator validator,
             AssistantRateLimiter assistantRateLimiter,
             ICurrentUser currentUser,
             CancellationToken ct
         ) =>
         {
-            //validering
             var validation = validator.Validate(request);
-            if(!validation.IsValid)
+            if (!validation.IsValid)
                 return validation.ToProblemResult();
 
-            //Rate limit
             var userId = currentUser.UserId!.Value.ToString();
 
             if (!assistantRateLimiter.TryConsume(userId))
@@ -38,8 +30,7 @@ public static class Endpoint
                     detail: AssistantRateLimiter.LimitReachedMessage
                 );
             }
-            
-            //Anropa handlern
+
             var answer = await handler.HandleAsync(request, ct);
 
             return Results.Ok(new Response(answer));
