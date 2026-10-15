@@ -6,7 +6,8 @@ export function ResourceTypeFilter({
   onChange,
   className = "mb-6",
 }: {
-  resourceTypes: ResourceType[];
+  // resourceTypes: ResourceType[];
+  resourceTypes: { id: string; name: string }[];
   selectedTypeId: string | null;
   onChange: (typeId: string | null) => void;
   className?: string;

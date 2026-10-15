@@ -1,8 +1,17 @@
-import type { Sensor } from "../../api/types";
+import { useState } from "react";
+import type { Sensor, SensorReading } from "../../api/types";
+import { useSensorReadings } from "../../hooks/useSensorReadings";
 import { useSensors } from "../../hooks/useSensors";
 import { groupByRoomType } from "../../lib/sensorGrouping";
+import { ResourceTypeFilter } from "../../components/ResourceTypeFilter";
 
-function SensorCard({ sensor }: { sensor: Sensor }) {
+function SensorCard({
+  sensor,
+  reading,
+}: {
+  sensor: Sensor;
+  reading?: SensorReading;
+}) {
   //{ sensor }: variabeln du använder inne i komponenten
   // { sensor: … }: fältnamnet i typbeskrivningen
   //Sensor (stor bokstav): typen från types.ts
@@ -18,37 +27,68 @@ function SensorCard({ sensor }: { sensor: Sensor }) {
         <div className="text-center">
           <p className="text-xs text-gray-500 dark:text-gray-400">Temperatur</p>
           <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-            – °C
+            {reading?.temperature !== undefined
+              ? `${reading.temperature.toFixed(1)} °C`
+              : "– °C"}
           </p>
         </div>
         <div className="text-center">
           <p className="text-xs text-gray-500 dark:text-gray-400">CO₂</p>
           <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-            – ppm
+            {reading?.co2 !== undefined ? `${reading.co2} ppm` : "– ppm"}
           </p>
         </div>
       </div>
 
-      {/* 3. Teknisk info*/}
-      <p className="mt-auto border-t border-gray-100 dark:border-gray-800 pt-2 text-xs text-gray-500 dark:text-gray-400">
-        {sensor.serial} · {sensor.model}
-      </p>
+      <div className="mt-auto border-t border-gray-100 dark:border-gray-800 pt-2 text-xs text-gray-500 dark:text-gray-400 flex justify-between">
+        <span>
+          {sensor.serial} · {sensor.model}
+        </span>
+        {/* ▶ UTC från servern → svensk lokal tid i webbläsaren */}
+        {reading?.time && (
+          <span>{new Date(reading.time).toLocaleTimeString("sv-SE")}</span>
+        )}
+      </div>
     </div>
   );
 }
 
 const SensorsPage = () => {
-  // Hämta sensorerna via useSensors()  → ger data, isLoading, error
-  // Visa rubrik
-  // OM laddar   → visa "Laddar sensorer..."
-  // OM fel      → visa felmeddelandet från backend (t.ex. 503-texten)
-  // OM data     → visa ett rutnät med ett SensorCard per sensor
   const { data: sensors, isLoading, error } = useSensors();
+  const { readings, isLive } = useSensorReadings();
+  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const grouped = groupByRoomType(sensors ?? []);
+  const typeOptions = [...grouped.keys()].map((type) => ({
+    id: type,
+    name: type,
+  }));
+  const visibleGroups = [...grouped].filter(
+    ([roomType]) => selectedType === null || roomType === selectedType,
+  );
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-        Sensorer
-      </h1>
+      {/* ▶ Rubrik + live-indikator på samma rad */}
+      <div className="flex items-center gap-3 mb-4">
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+          Sensorer
+        </h1>
+        <span
+          className={`flex items-center gap-1.5 text-xs font-medium ${isLive ? "text-green-600" : "text-gray-400"}`}
+        >
+          <span
+            className={`h-2 w-2 rounded-full ${isLive ? "bg-green-500 animate-pulse" : "bg-gray-400"}`}
+          />
+          {isLive ? "Live" : "Ej ansluten"}
+        </span>
+      </div>
+
+      {sensors && (
+        <ResourceTypeFilter
+          resourceTypes={typeOptions}
+          selectedTypeId={selectedType}
+          onChange={setSelectedType}
+        />
+      )}
 
       {isLoading && <p className="text-gray-500">Laddar sensorer...</p>}
 
@@ -63,7 +103,7 @@ const SensorsPage = () => {
         // ▶ En sektion per grupp, med luft mellan (space-y-8)
         <div className="space-y-8">
           {/* ▶ Map → array av [typnamn, sensorer] → en sektion per grupp */}
-          {[...groupByRoomType(sensors)].map(([roomType, group]) => (
+          {visibleGroups.map(([roomType, group]) => (
             <section key={roomType}>
               {/* ▶ Rubrik med antal, t.ex. "Mötesrum (4)" */}
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
@@ -76,7 +116,11 @@ const SensorsPage = () => {
               {/* ▶ Samma rutnät som innan, men bara för den här gruppen */}
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {group.map((sensor) => (
-                  <SensorCard key={sensor.id} sensor={sensor} />
+                  <SensorCard
+                    key={sensor.id}
+                    sensor={sensor}
+                    reading={readings[sensor.id]}
+                  />
                 ))}
               </div>
             </section>

@@ -5,33 +5,29 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using OpenAI.Chat;
 
 namespace Innovia.Api.Features.Assistant;
-    public static class AssistantServiceExtensions
-    {
-        //Tar emot IConfiguration för att kunna läsa modell och nyckel
-    public static IServiceCollection AddAssistantFeature (this IServiceCollection services, IConfiguration configuration)
+
+public static class AssistantServiceExtensions
+{
+    public static IServiceCollection AddAssistantFeature(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddScoped<AssistantContextBuilder>();
         services.AddScoped<AskAssistant.Handler>();
         services.AddScoped<AskAssistant.Validator>();
 
-        //Minnescache (räknarna) och klockan för AssitantRateLimiter
         services.AddMemoryCache();
         services.TryAddSingleton(TimeProvider.System);
 
-        //1. Läs konfiguration. IConfiguration slår emot appsetting.json, user secrets och miljövariabler
-        var apiKey = configuration["OpenAI:ApiKey"]; //fr User Secrets
-        var model = configuration["OpenAI:Model"]; //fr appsettings
+        var apiKey = configuration["OpenAI:ApiKey"];
+        var model = configuration["OpenAI:Model"];
         var maxQuestionsPerHour = configuration.GetValue("Assistant:MaxQuestionsPerHour", 20);
 
-        //2. Kontrollera att värdena finns
-        if(string.IsNullOrWhiteSpace(apiKey))
+        if (string.IsNullOrWhiteSpace(apiKey))
             throw new InvalidOperationException("OpenAI:ApiKey saknas. Kör: dotnet user-secrets set \"OpenAI:ApiKey\" \"sk-...\"");
 
-        if(string.IsNullOrWhiteSpace(model))
+        if (string.IsNullOrWhiteSpace(model))
             throw new InvalidOperationException("OpenAI:Model saknas i appsettings.json");
 
-        //3. Registrera IChatClient
-        services.AddSingleton<IChatClient>(new ChatClient(model,apiKey).AsIChatClient());
+        services.AddSingleton<IChatClient>(new ChatClient(model, apiKey).AsIChatClient());
 
         services.AddSingleton(sp => new AssistantRateLimiter(
             sp.GetRequiredService<IMemoryCache>(),
@@ -41,13 +37,12 @@ namespace Innovia.Api.Features.Assistant;
 
         return services;
     }
-        
-    public static IEndpointRouteBuilder MapAssistantEndpoints (this IEndpointRouteBuilder app)
+
+    public static IEndpointRouteBuilder MapAssistantEndpoints(this IEndpointRouteBuilder app)
     {
 
         app.MapHub<ChatHub>("/hubs/chat");
 
-        //routegrupp: All endpoints här får adess som börjar med /assistant
         var group = app.MapGroup("/assistant").WithTags("Assistant");
 
         AskAssistant.Endpoint.Map(group)
@@ -61,7 +56,7 @@ namespace Innovia.Api.Features.Assistant;
             .RequireAuthorization(AuthorizationPolicies.AdminOnly);
 
         return group;
-        
+
     }
 
 

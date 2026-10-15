@@ -101,3 +101,17 @@ export type Sensor = {
   roomName: string;
   roomType: string;
 };
+
+export interface MeasurementReceived {
+  tenantSlug: string;
+  deviceId: string;
+  type: string;
+  value: number;
+  time: string;
+}
+
+export interface SensorReading {
+  temperature?: number;
+  co2?: number;
+  time?: string;
+}

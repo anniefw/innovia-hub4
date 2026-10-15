@@ -13,36 +13,24 @@
 
 ### Startordning
 
+1. Docker Desktop + docker compose -f deploy/docker-compose.yml up -d (från mappen iot/innovia-iot)
+2. DeviceRegistry.Api (dotnet run)
+3. Realtime.Hub (dotnet run)
+4. Ingest.Gateway (dotnet run)
+5. Edge.Simulator (dotnet run)
+6. Innovia.Api (dotnet run --launch-profile https)
+7. Frontend (npm run dev)
+
 ## Buggar/problem som fixats under projektet
 
 1. Realtime.Hub refererade ett föråldrat SignalR-paket, (ett paket från .NET Core 2.x). Paketet var onödigt och drog in gamla, sårbara beroenden (byggvarningar NU190x).
    Lösning: Paketreferensen togs bort.
 
-2. Mätvärden sparades inte på grund av tidszon. Edge.Simulator satte lokal tid (+02:00 i Sverige), Ingest.Gateway tog emot meddelandet via MQTT men kunde inte spara då Npgsql (db-rutinen i Ingest.Gateway) endast accepterar offset 0 för kolumntypen timestamp with timezone = inga mätvärden sparades.
+2. Mätvärden sparades inte på grund av tidszon. Edge.Simulator satte lokal tid (+02:00 i Sverige), Ingest.Gateway tog emot meddelandet via MQTT men kunde inte spara då Npgsql endast accepterar offset 0 för kolumntypen timestamp with timezone = inga mätvärden sparades.
    Lösning: En variabel lades till som normaliserar tiden till UTC som sedan används när både mätvärdet sparas och publiceras. Lades till i Ingest.Gateway istället för tex ändringar i Edge.Simulator för att man ska kunna ändra simulatorn till riktiga enheter utan att riskera krasch.
 
 3. Alla mätvärden sparades under samma enhet. Nyckeln var inte unik så första enheten som skickade (dev-101) cachades under "innovia" och alla efterföljande enheter fick sedan dess guid från cachen, så alla mätvärden sparades som dev-101. Det funkade när det bara var en enhet som var hårdkodad och skickade, men förändringen till 10 enheter gjorde detta till en problem.
    Lösning: Cachenyckeln ändrades till $"{tenantSlug}:{deviceSerial}", så att varje enhet får en egen unik plats i cachen.
-   Verifiering: SELECT "DeviceId", COUNT(\*) FROM "Measurements" GROUP BY "DeviceId";
-   Före: 1 rad (alla 898 mätvärden på dev-101). Efter: 10 rader med lika antal. Felaktig data rensades med TRUNCATE.
-
-Filen beskriver vilka ändringar och var ni har genomfört under projektet
-Ändringar kopplade till G-krav
-
-- Minst 10 registrerade enheter i DeviceRegistry. KLAR
-- Alla enheter ska ta emot mock-data via Edge.Simulator. KLAR
-- Alla enheter ska kunna hämtas via DeviceRegistry API och visas i er egen portal.
-- Realtidsdata ska presenteras för enheterna med hjälp av SignalR + Realtime.Hub i er egen portal.
-  Ändringar kopplade till VG-krav
-- Bygga en enkel prototyp av Rules.Engine som:
-- Låter en regel skapas för en enhet (t.ex. ”om temperaturen är högre än 28°C”).
-- När mätvärden kommer in (via Ingest och Edge.Simulator), utvärderas regeln.
-- Om regeln slår till, skickas en alert via Realtime.Hub som kan fångas i portalen.
-  Minimikrav för VG
-- Skapa regel: Skapa regeler eller via enkel endpoint (t.ex. POST /rules).
-- Utvärdering: Regeln jämför senaste mätvärdet för enheten mot ett tröskelvärde.
-- Alert: Om tröskeln överskrids skickas ett SignalR-event (alertRaised) till tenantens grupp i Realtime.Hub.
-- Implementering i ert projekt: Plattformen kan ta emot alertRaised och skriva ut varningen i UI:t.
 
 ## Ändringar som gjorts för att uppfylla kraven
 
@@ -53,39 +41,37 @@ Filen beskriver vilka ändringar och var ni har genomfört under projektet
 
 3. Edge.simulatorn skickade bara data för en hårdkodad enhet (dev-101). Då krav är att alla 10 enheter ska få data minst var 10e sekund så lades en array till med de olika serials. En foreach-loop inne i while skickade ett meddelande per enhet, och de hårdkodade variablerna byttes ut mot {serials}-variabler. Intervallet är också sänkt från 10 s till 9s, eftersom ett intervall dessutom tar tiden att publicera 10 meddelande.
    Ytterligare ett tillägg här var att AI-serverrummet (dev-105) skickar högre temperaturer. Temperaturen avrundas till en decimal, och loggraden förkortades för att göra det enklare att läsa. Lokal tid är medvetet kvar eftersom det då bevisar att buggen som löstes i 2an funkar, där den lokala tiden normaliseras till utc.
-   Tillägg: Jag valde senare att lägga till samtliga resurser från Innovia (förutom VR-headset som inte är ett rum i sig), se 5.
 
-4. Backend: Ny feature (sensor)
-   Ny endpoint GET /sensors i Innovia.Api (Features/Sensors). Hämtar listan med alla 10 sensorer och visar vilket rum varje sensor sitter i, tex dev-101 - Mötesrum 1. Endpointen används av sensorsidan i frontend.
-   Typad Httpklient som samlar all kommunikation med DeviceRegistry.Api (DeviceRegistryClient). Om DeviceRegistry.Api ändrar sitt format behöver bara backend anpassas, inte frontend.
-   Handlern slår upp tenant via slug (konfigurerad i appsettings.json, eftersom GUID skiljer sig mellan maskiner), hämtar enheterna och kopplar varje RoomId till Resource.Name i en enda databasfråga (undviker N+1).
+4. Backend: Ny feature (sensor) och endpoint GET /sensors i Innovia.Api (Features/Sensors). Hämtar listan med alla 10 sensorer och visar vilket rum varje sensor sitter i, tex dev-101 - Mötesrum 1. Endpointen används av sensorsidan i frontend.Typad Httpklient som samlar all kommunikation med DeviceRegistry.Api (DeviceRegistryClient). Om DeviceRegistry.Api ändrar sitt format behöver bara backend anpassas, inte frontend.
+   Handlern slår upp tenant via slug (konfigurerad i appsettings.json), hämtar enheterna och kopplar varje RoomId till Resource.Name i en enda databasfråga (undviker N+1).
    Egna Response-records, så att frontend inte är beroende av DeviceRegistry.Apis format.
    Felhantering: Om DeviceRegistry.Api är avstängd eller inte svarar inom 5 sekunder får användaren ett tydligt meddelande ("Sensortjänsten är inte tillgänglig just nu") med statuskod 503, i stället för att appen kraschar. För detta lades en ny feltyp till i projektets felhantering.En felkonfigurerad tenant ger 500.
    Behörighet: AdminOnly.
    Testat: 200 med 10 sensorer och rumsnamn vid inloggning som admin, 401 utan inloggning, 503 med DeviceRegistry.Api avstängd.
 
-5. Utökning till 20 sensorer: Sensorer finns i alla mötesrum (4), vid alla drop-in-skrivbord (15) och i AI-serverrummet (1). VR-headset fick inga sensorer, eftersom en temperatur- och CO₂-sensor mäter luften i ett rum och inte passar på en bärbar enhet. Ändringen krävde bara två justeringar (seed-skriptet och antalet i Edge.Simulator). Backend och frontend hanterar ett godtyckligt antal sensorer.
-   Gruppering: Sensorsidan visar sensorerna under rubriker per resurstyp. Typen hämtas från databasen i backend (inte gissas från rumsnamnet), och skrivbord sorteras i naturlig ordning (2 före 10).
-   6. Lade till en ny sida i frontend som endast är för Admin där samtliga resurser (förutom VR-headset) syns som kort med sensorinformation.
+5. Utökning till 20 sensorer: Sensorer finns i alla mötesrum (4), vid alla drop-in-skrivbord (15) och i AI-serverrummet (1). VR-headset fick inga sensorer, eftersom det är en enhet, inte ett rum i sig. Ändringen krävde bara två justeringar (seed-skriptet och antalet i Edge.Simulator).
 
-   7. Realtidsdata: Ändrade CORS på RealtimeHub att tillåta min frontend, skapade anslutning till RealtimeHub från frontend, en hook som tar emot och sparar värden samt visar ut livedata-värden på sensorkorten i frontend.
+6. Lade till en ny sida i frontend som där samtliga resurser (förutom VR-headset) syns som kort med sensorinformation. Korten är grupperade under rubrikerna för de olika resurstyperna och innehåller rummets namn, temperatur, C02-halt, samt sensors serienummer och modell. Endast admin kan se sidan.
 
-### Upptäckta – ej åtgärdade
+7. Realtidsdata: Ändrade CORS på RealtimeHub att tillåta min frontend, skapade anslutning till RealtimeHub från frontend, en hook som tar emot och sparar värden samt visar ut livedata-värden på sensorkorten i frontend. Om DeviceRegistry.Api är nere visas backendens felmeddelande ("Sensortjänsten är inte tillgänglig just nu") i en röd ruta på sidan.Datan uppdateras live var 9:e sekund, och en grön live-indikator visar att anslutningen fungerar. Korten har även uppdaterats med klockslaget för senaste mätningen.
+   Obs säkerhetsbrist: Realtime.Hub har ingen inloggning, så vem som helst kan både lyssna på anslutningen och skicka falska värden.
+   Möjliga lösningar:
 
-| #   | Tjänst             | Brist                                                                          | Konsekvens                                                                                                                        |
-| --- | ------------------ | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| 3   | Realtime.Hub       | Saknar Swagger                                                                 | Uppgiften kräver Swagger för varje tjänst. En SignalR-hubb är dock inte REST och kan inte beskrivas i Swagger på samma sätt       |
-| 4   | Ingest.Gateway     | `HubConnection.StartAsync()` vid uppstart saknar try/catch                     | Ingest.Gateway kraschar om Realtime.Hub inte är igång, så startordningen är avgörande                                             |
-| 5   | Ingest.Gateway     | MQTT-hanteraren loggar bara `ex.Message`                                       | Den verkliga orsaken (inner exception) syns inte, vilket försvårade felsökningen av tidszonsbuggen                                |
-| 6   | DeviceRegistry.Api | POST-endpoints tar emot entiteterna `Tenant`/`Device` direkt (mass assignment) | Klienten kan sätta `Id` själv. Swaggers exempelbody fyller i ett fast platshållar-GUID, vilket orsakade en dubblett under arbetet |
-| 7   | DeviceRegistry.Api | Unikhetsbrott (Postgres `23505`) fångas inte                                   | En dubblett ger `500 Internal Server Error` i stället för `409 Conflict`                                                          |
-| 8   | DeviceRegistry.Api | `Slug` och `Serial` saknar unique-index                                        | Två tenants med samma slug kan skapas, och `by-slug` returnerar då en godtycklig av dem                                           |
-| 9   | DeviceRegistry.Api | README nämner `GET /api/tenants`                                               | Endpointen finns inte                                                                                                             |
-| 10  | deploy             | `docker-compose.yml` saknar namngiven volym för databasen                      | `docker compose down` raderar all IoT-data                                                                                        |
-| 11  | deploy             | Redis startas                                                                  | Ingen tjänst använder Redis                                                                                                       |
-| 12  | Innovia.Shared     | Innehåller oanvända klasser (`Measurement`, `SensorKind`)                      | Varje tjänst har i stället en egen kopia av `MeasurementRow`, vilket är teknisk skuld                                             |
+- En hemlig nyckel som bara Ingest.Gateway får använda för att skicka mätvärden.
+- En kortlivad "biljett" från Innovia.Api som krävs för att lyssna.
+- Låta Innovia.Api ta emot mätvärdena och skicka dem vidare via en egen, inloggningsskyddad hubb. Då kan Realtime.Hub vara helt dold.
 
-## Realtime.Hub – ingen autentisering: Alla klienter kan anropa JoinTenant (lyssna på valfri tenant) och PublishMeasurement (skicka falska mätvärden till alla anslutna).
+  Ändringar kopplade till VG-krav
+
+- Bygga en enkel prototyp av Rules.Engine som:
+- Låter en regel skapas för en enhet (t.ex. ”om temperaturen är högre än 28°C”).
+- När mätvärden kommer in (via Ingest och Edge.Simulator), utvärderas regeln.
+- Om regeln slår till, skickas en alert via Realtime.Hub som kan fångas i portalen.
+  Minimikrav för VG
+- Skapa regel: Skapa regeler eller via enkel endpoint (t.ex. POST /rules).
+- Utvärdering: Regeln jämför senaste mätvärdet för enheten mot ett tröskelvärde.
+- Alert: Om tröskeln överskrids skickas ett SignalR-event (alertRaised) till tenantens grupp i Realtime.Hub.
+- Implementering i ert projekt: Plattformen kan ta emot alertRaised och skriva ut varningen i UI:t.
 
 ## Systemets mikrotjänster
 

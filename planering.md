@@ -1,17 +1,3 @@
-Steg 8: Realtid i frontend (cirka 2–3 h)
-Lägg till din Vite-origin (troligen http://localhost:5173) i CORS-policyn i Realtime.Hub.
-lib/sensorHubConnection.ts (samma mönster som resourceHubConnection.ts): anslut, JoinTenant("innovia") och joina igen vid reconnect.
-useSensorUpdates: spara senaste värdet per deviceId och typ i state eller via setQueryData, inte via invalidateQueries.
-Varför inte invalidera som för bokningar? Svar: med 10 enheter × 2 typer var 10:e sekund blir det cirka 2 refetchar per sekund helt i onödan. Eventet innehåller redan hela värdet, så skriv in det direkt.
-Klart när: “23,4 °C · 950 ppm” uppdateras live på varje kort. Nu är G klart funktionellt.
-
-Steg 9 (valfritt): Startvärden
-Utan det här är korten tomma i upp till 10 sekunder efter att sidan laddats. Du kan hämta senaste värdet via Portal.Adapter /measurements. Det är snyggt men inget krav, så hoppa över det om tiden är knapp.
-
-Steg 10: Implementation.md för G och ett test från noll (cirka 1–2 h)
-Stoppa allt och följ dina egna “Så kör du”-instruktioner från början. Det är så läraren kommer att köra projektet.
-Klart när: allt fungerar enbart genom att följa dokumentet.
-
 VG-kraven
 
 Steg 11: Regler i Rules.Engine (cirka 2 h)
@@ -32,6 +18,8 @@ Lyssna på alertRaised i samma sensorHubConnection och visa en banner eller toas
 Tips för demon: sätt en regel som “temperature > 22” så att den slår till direkt.
 
 Steg 15: Implementation.md för VG och genrep (cirka 1–2 h)
+
+STEG 16: Ta bort onödig kommentarer från SAMTLIGA filer. Gå igenom hela projektet.
 
 Fundering:
 lägg till en rubrik högst upp i sensorer: Alla mätvärden är inom godkända spann. Vid alerts/fel ändras denna till att tyliggöra tex "AI-servern har icke godkända mätvärden. Grön text vid godkända mätvärden, gul text lätt förhöjd, röd text inte acceptabelt.
