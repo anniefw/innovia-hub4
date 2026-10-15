@@ -1,3 +1,9 @@
+# Implementation
+
+## Översikt
+
+Innovia Hubs plattform har kopplats ihop med IoT-tjänster, där simulerade sensorer (temperatur och CO2) skickar mätvärden. Integrationen innebär att 20 simulerade sensorer i mötesrum, vid skrivbord och i AI-serverrummet nu skickar mätvärden var 9:e sekund, som admin ser live på sidan Sensorer i färdiga kort där även rumsnamn, modell, och tid för senaste mätvärdet visas.
+
 ## Portlista
 
 #### Tjänst Port
@@ -11,26 +17,33 @@
     Realtime.Hub	                        5103
     Portal.Adapter	                        5104
 
-### Startordning
+## Startordning
 
-1. Docker Desktop + docker compose -f deploy/docker-compose.yml up -d (från mappen iot/innovia-iot)
-2. DeviceRegistry.Api (dotnet run)
-3. Realtime.Hub (dotnet run)
-4. Ingest.Gateway (dotnet run)
-5. Edge.Simulator (dotnet run)
-6. Innovia.Api (dotnet run --launch-profile https)
-7. Frontend (npm run dev)
+### Förutsättningar
 
-## Buggar/problem som fixats under projektet
+- Docker Desktop, .NET 8 SDK, .NET 10 SDK, Node.js
+- OpenAI-nyckel för Innovia.Api (krävs för att API:t ska starta, se README_Nova.md):
+  `cd Innovia.Api` → `dotnet user-secrets set "OpenAI:ApiKey" "sk-..."`
 
-1. Realtime.Hub refererade ett föråldrat SignalR-paket, (ett paket från .NET Core 2.x). Paketet var onödigt och drog in gamla, sårbara beroenden (byggvarningar NU190x).
-   Lösning: Paketreferensen togs bort.
+### Första gången (i denna ordning)
 
-2. Mätvärden sparades inte på grund av tidszon. Edge.Simulator satte lokal tid (+02:00 i Sverige), Ingest.Gateway tog emot meddelandet via MQTT men kunde inte spara då Npgsql endast accepterar offset 0 för kolumntypen timestamp with timezone = inga mätvärden sparades.
-   Lösning: En variabel lades till som normaliserar tiden till UTC som sedan används när både mätvärdet sparas och publiceras. Lades till i Ingest.Gateway istället för tex ändringar i Edge.Simulator för att man ska kunna ändra simulatorn till riktiga enheter utan att riskera krasch.
+| #   | Vad                                                          | Kommando (från repo-roten)                                                 |
+| --- | ------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| 1   | Innovias databas                                             | `docker compose up -d`                                                     |
+| 2   | IoT-infrastruktur (TimescaleDB, Mosquitto, Redis)            | `cd iot/innovia-iot` → `docker compose -f deploy/docker-compose.yml up -d` |
+| 3   | Innovia.Api – skapar och fyller databasen med resurser       | `cd Innovia.Api` → `dotnet run --launch-profile https`                     |
+| 4   | DeviceRegistry.Api                                           | `cd iot/innovia-iot/src/DeviceRegistry.Api` → `dotnet run`                 |
+| 5   | Skapa tenant + 20 sensorer (kräver att 3 och 4 körs)         | `cd iot` → `powershell -ExecutionPolicy Bypass -File .\seed-iot.ps1`       |
+| 6   | Realtime.Hub                                                 | `cd iot/innovia-iot/src/Realtime.Hub` → `dotnet run`                       |
+| 7   | Ingest.Gateway (**efter** Realtime.Hub, annars kraschar den) | `cd iot/innovia-iot/src/Ingest.Gateway` → `dotnet run`                     |
+| 8   | Edge.Simulator                                               | `cd iot/innovia-iot/src/Edge.Simulator` → `dotnet run`                     |
+| 9   | Frontend                                                     | `cd frontend` → `npm install` → `npm run dev`                              |
 
-3. Alla mätvärden sparades under samma enhet. Nyckeln var inte unik så första enheten som skickade (dev-101) cachades under "innovia" och alla efterföljande enheter fick sedan dess guid från cachen, så alla mätvärden sparades som dev-101. Det funkade när det bara var en enhet som var hårdkodad och skickade, men förändringen till 10 enheter gjorde detta till en problem.
-   Lösning: Cachenyckeln ändrades till $"{tenantSlug}:{deviceSerial}", så att varje enhet får en egen unik plats i cachen.
+Logga in på http://localhost:5173 som admin (`admin@admin.com` / `Password123!`) och välj **Sensorer** i menyn.
+
+### Följande gånger
+
+Samma ordning, men steg 5 (seed-skriptet) behövs inte. Det kan dock köras igen utan risk, eftersom det bara skapar det som saknas.
 
 ## Ändringar som gjorts för att uppfylla kraven
 
@@ -61,8 +74,10 @@
 - En kortlivad "biljett" från Innovia.Api som krävs för att lyssna.
 - Låta Innovia.Api ta emot mätvärdena och skicka dem vidare via en egen, inloggningsskyddad hubb. Då kan Realtime.Hub vara helt dold.
 
-  Ändringar kopplade till VG-krav
+  <!-- Ändringar kopplade till VG-krav
 
+<!--
+VG KRAV
 - Bygga en enkel prototyp av Rules.Engine som:
 - Låter en regel skapas för en enhet (t.ex. ”om temperaturen är högre än 28°C”).
 - När mätvärden kommer in (via Ingest och Edge.Simulator), utvärderas regeln.
@@ -71,7 +86,43 @@
 - Skapa regel: Skapa regeler eller via enkel endpoint (t.ex. POST /rules).
 - Utvärdering: Regeln jämför senaste mätvärdet för enheten mot ett tröskelvärde.
 - Alert: Om tröskeln överskrids skickas ett SignalR-event (alertRaised) till tenantens grupp i Realtime.Hub.
-- Implementering i ert projekt: Plattformen kan ta emot alertRaised och skriva ut varningen i UI:t.
+- Implementering i ert projekt: Plattformen kan ta emot alertRaised och skriva ut varningen i UI:t. -->
+
+8. Tillägg gjordes till den befintliga Rules.Engines som hade flera TODO-kommentarer för att kunna skapa regler, och lista regler och alerts.
+
+- Regelmodellen fylldes i med enhet, mättyp (temperatur/CO₂), jämförelse och tröskelvärde. Regeln sparar tenantens slug, eftersom larmgrupperna i Realtime.Hub heter efter slug.
+- Larmmodellen sparar en kopia av regelns villkor, så att gamla larm går att förstå även om regeln ändras.
+- TODO-endpointes fylldes i för att skapa, lista regler och lista alerts (50 senaste).
+- Felaktig typ eller operator ger 400 med en förklaring, i stället för en regel som tyst aldrig slår till.
+- Eget request-objekt bygges så att klienten inte kan sätta regelns ID själv.
+- Rules.Engine fick appsettings.json (port 5105) och Swagger för att kunna testa endpoints.
+
+## Buggar/problem som fixats under projektet
+
+1. Realtime.Hub refererade ett föråldrat SignalR-paket, (ett paket från .NET Core 2.x). Paketet var onödigt och drog in gamla, sårbara beroenden (byggvarningar NU190x).
+   Lösning: Paketreferensen togs bort.
+
+2. Mätvärden sparades inte på grund av tidszon. Edge.Simulator satte lokal tid (+02:00 i Sverige), Ingest.Gateway tog emot meddelandet via MQTT men kunde inte spara då Npgsql endast accepterar offset 0 för kolumntypen timestamp with timezone = inga mätvärden sparades.
+   Lösning: En variabel lades till som normaliserar tiden till UTC som sedan används när både mätvärdet sparas och publiceras. Lades till i Ingest.Gateway istället för tex ändringar i Edge.Simulator för att man ska kunna ändra simulatorn till riktiga enheter utan att riskera krasch.
+
+3. Alla mätvärden sparades under samma enhet. Nyckeln var inte unik så första enheten som skickade (dev-101) cachades under "innovia" och alla efterföljande enheter fick sedan dess guid från cachen, så alla mätvärden sparades som dev-101. Det funkade när det bara var en enhet som var hårdkodad och skickade, men förändringen till 10 enheter gjorde detta till en problem.
+   Lösning: Cachenyckeln ändrades till $"{tenantSlug}:{deviceSerial}", så att varje enhet får en egen unik plats i cachen.
+
+## Brister som upptäckts men inte åtgärdats
+
+| Tjänst             | Brist                                                             | Konsekvens                                                                       |
+| ------------------ | ----------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Realtime.Hub       | Ingen autentisering                                               | Vem som helst kan lyssna på alla mätvärden och skicka falska värden (se punkt 7) |
+| Ingest.Gateway     | Anslutningen till Realtime.Hub vid start saknar felhantering      | Kraschar om Realtime.Hub inte körs – startordningen är avgörande                 |
+| Ingest.Gateway     | MQTT-hanteraren loggar bara det yttre felmeddelandet              | Den verkliga orsaken syns inte, vilket försvårade felsökningen av tidszonsbuggen |
+| Ingest.Gateway     | De egna "not found"-felmeddelandena i `ResolveAsync` visas aldrig | `GetFromJsonAsync` kastar redan vid 404, så koden når aldrig fram till dem       |
+| DeviceRegistry.Api | Klienten kan sätta `Id` själv (entiteten tas emot direkt)         | Swaggers exempel-ID orsakade en dubblett under arbetet                           |
+| DeviceRegistry.Api | Dubbletter ger 500 i stället för 409                              | Ett otydligt fel för klienten                                                    |
+| DeviceRegistry.Api | `Slug` och `Serial` saknar unikhetskontroll                       | Två tenants med samma slug kan skapas                                            |
+| DeviceRegistry.Api | README nämner `GET /api/tenants`                                  | Endpointen finns inte                                                            |
+| deploy             | Databasen saknar namngiven volym                                  | `docker compose down` raderar all IoT-data                                       |
+| deploy             | Redis startas                                                     | Ingen tjänst använder den                                                        |
+| Innovia.Shared     | Oanvända klasser (`Measurement`, `SensorKind`)                    | Varje tjänst har i stället en egen kopia av mätvärdesklassen                     |
 
 ## Systemets mikrotjänster
 
@@ -100,3 +151,36 @@ Worker service som kan hantera regler och generera alerts baserat på inkommande
 ### Edge.Simulator
 
 En konsolapp som simulerar IoT-enheter och skickar data via MQTT. Används för att testa utan fysisk hårdvara.
+
+## Så kör du projektet
+
+### Förutsättningar
+
+- Docker Desktop, .NET 8 SDK, .NET 10 SDK, Node.js
+- OpenAI-nyckel för Innovia.Api (krävs för att API:t ska starta, se README_Nova.md):
+  `cd Innovia.Api` → `dotnet user-secrets set "OpenAI:ApiKey" "sk-..."`
+
+### Första gången (i denna ordning)
+
+| #   | Vad                                                          | Kommando (från repo-roten)                                                 |
+| --- | ------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| 1   | Innovias databas                                             | `docker compose up -d`                                                     |
+| 2   | IoT-infrastruktur (TimescaleDB, Mosquitto, Redis)            | `cd iot/innovia-iot` → `docker compose -f deploy/docker-compose.yml up -d` |
+| 3   | Innovia.Api – skapar och fyller databasen med resurser       | `cd Innovia.Api` → `dotnet run --launch-profile https`                     |
+| 4   | DeviceRegistry.Api                                           | `cd iot/innovia-iot/src/DeviceRegistry.Api` → `dotnet run`                 |
+| 5   | Skapa tenant + 20 sensorer (kräver att 3 och 4 körs)         | `cd iot` → `powershell -ExecutionPolicy Bypass -File .\seed-iot.ps1`       |
+| 6   | Realtime.Hub                                                 | `cd iot/innovia-iot/src/Realtime.Hub` → `dotnet run`                       |
+| 7   | Ingest.Gateway (**efter** Realtime.Hub, annars kraschar den) | `cd iot/innovia-iot/src/Ingest.Gateway` → `dotnet run`                     |
+| 8   | Edge.Simulator                                               | `cd iot/innovia-iot/src/Edge.Simulator` → `dotnet run`                     |
+| 9   | Frontend                                                     | `cd frontend` → `npm install` → `npm run dev`                              |
+
+Logga in på http://localhost:5173 som admin (`admin@admin.com` / `Password123!`) och välj **Sensorer** i menyn.
+
+### Följande gånger
+
+Samma ordning, men steg 5 (seed-skriptet) behövs inte. Det kan köras igen utan risk, eftersom det bara skapar det som saknas.
+
+### Viktigt
+
+- Använd `up -d` och `stop` för IoT-composen, **inte** `down`. Den saknar namngiven volym, så `down` raderar all IoT-data (och då måste seed-skriptet köras igen).
+- `deploy-db-1` startar inte automatiskt när datorn startas om. Kör steg 2 igen om DeviceRegistry.Api inte kan ansluta till port 5432.
