@@ -97,6 +97,11 @@ VG KRAV
 - Eget request-objekt bygges så att klienten inte kan sätta regelns ID själv.
 - Rules.Engine fick appsettings.json (port 5105) och Swagger för att kunna testa endpoints.
 
+9. Reglerna utvärderas automatiskt, jämförs var 10e sekund men enhetens senaste mätvärde. Om regeln slår till sparas ett larm. Samma regel larmar högst 1 ggr per minut, så inte admin blir överbelastad av för många larm. Samma mätvärde ger inte två larm, och ganle mätvärdet ignoreras.
+   En tillagd regel om att temperaturen i dev-105 (AI-serverrummet) inte får gå över 28 grader är testad och ger larm ca 1 ggr/minuten (testad via info i konsolen, och via GET/alerts i Swagger)
+
+10. Larm skickas i realtid via Realtime.Hub (alertRaised). RealtimeHub fick en ny metod (PublishAlert) som skickar eventet alertRaised till tenantgruppen (innovia). Rules.Engine skickar larmet direkt efter att det sparats (sparas först ifall utskicket misslyckas). Testat med testklienten för att se alerten både i konsolen för webbläsaren och i konsolen för Rules.Engine.
+
 ## Buggar/problem som fixats under projektet
 
 1. Realtime.Hub refererade ett föråldrat SignalR-paket, (ett paket från .NET Core 2.x). Paketet var onödigt och drog in gamla, sårbara beroenden (byggvarningar NU190x).
@@ -107,6 +112,10 @@ VG KRAV
 
 3. Alla mätvärden sparades under samma enhet. Nyckeln var inte unik så första enheten som skickade (dev-101) cachades under "innovia" och alla efterföljande enheter fick sedan dess guid från cachen, så alla mätvärden sparades som dev-101. Det funkade när det bara var en enhet som var hårdkodad och skickade, men förändringen till 10 enheter gjorde detta till en problem.
    Lösning: Cachenyckeln ändrades till $"{tenantSlug}:{deviceSerial}", så att varje enhet får en egen unik plats i cachen.
+
+4. Rules.Engines bakgrundstjänst var registrerad som singleton som lever lika länge som appen, men tog emot databasobjekt (DbContext) som är scoped, alltså tänkta att bara leva under ett anrop. Eftersom bakgrundstjänsten aldrig skapas om, användes samma databasobjekt i alla varv under hela appens livstid. Det kan ge gammal data, växande minnesanvändning och ett trasigt läge efter ett databasfel.
+   Lösning: Bakgrundstjänsten tar istället emot IServiceScopeFactory och skapar ett nytt scope, med nya
+   databasobjekt, i varje varv.
 
 ## Brister som upptäckts men inte åtgärdats
 

@@ -16,11 +16,7 @@
 // TODOs are intentionally terse and technical; treat them as guidance...
 
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.SignalR.Client;
-using Microsoft.Extensions.Logging;
-using Microsoft.VisualBasic;
-
 var builder = WebApplication.CreateBuilder(args);
 
 // --- Logging ---
@@ -68,11 +64,10 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 // --- Endpoints ---
-// TODO: POST /rules – create a device-scoped rule. Suggested body:
-//   { "tenantId":"...", "deviceId":"...", "type":"temperature", "op":">", "threshold": 28.0 }
 var allowedOperators = new[] { ">", ">=", "<", "<=" };
 var allowedTypes = new[] { "temperature", "co2" };
 
+//POST /rules - add new rule
 app.MapPost("/rules", async (CreateRuleRequest req, RulesDbContext db) =>
 {
     var errors = new Dictionary<string, string[]>();
@@ -102,11 +97,11 @@ app.MapPost("/rules", async (CreateRuleRequest req, RulesDbContext db) =>
     return Results.Created($"/rules/{rule.Id}", rule);
 });
 
-// TODO: GET /rules – list rules.
+//GET /rules – list rules.
 app.MapGet("/rules", async (RulesDbContext db) =>
     Results.Ok(await db.Rules.OrderByDescending(r => r.CreatedAt).ToListAsync()));
 
-// TODO: GET /alerts – list latest alerts (filter on tenant/device is nice to have).
+//GET /alerts – list latest alerts (filter on tenant/device is nice to have).
 app.MapGet("/alerts", async (Guid? deviceId, RulesDbContext db) =>
 {
     var query = db.Alerts.AsQueryable();
@@ -146,16 +141,18 @@ app.Run();
 // ===========================
 public class RulesWorker : BackgroundService
 {
+    private static readonly TimeSpan Cooldown = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan MaxMeasurementAge = TimeSpan.FromSeconds(60);
     private readonly ILogger<RulesWorker> _log;
-    private readonly RulesDbContext _rules;
-    private readonly IngestReadDbContext _ingest;
+    private readonly IServiceScopeFactory _scopefactory;
+    // private readonly RulesDbContext _rules;
+    // private readonly IngestReadDbContext _ingest;
     private readonly HubConnection _hub;
 
-    public RulesWorker(ILogger<RulesWorker> log, RulesDbContext rules, IngestReadDbContext ingest, HubConnection hub)
+    public RulesWorker(ILogger<RulesWorker> log, RulesDbContext rules, IServiceScopeFactory scopeFactory, HubConnection hub)
     {
         _log = log;
-        _rules = rules;
-        _ingest = ingest;
+        _scopefactory = scopeFactory;
         _hub = hub;
     }
 
@@ -167,6 +164,7 @@ public class RulesWorker : BackgroundService
         {
             try
             {
+                await EvaluateRulesAsync(stoppingToken);
                 // TODO: Load enabled rules from _rules.
                 // TODO: For each rule, fetch the latest measurement (device + type) from _ingest.
                 // TODO: Compare value against threshold using the rule's operator.
@@ -182,6 +180,109 @@ public class RulesWorker : BackgroundService
             }
 
             await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
+        }
+    }
+
+    private async Task EvaluateRulesAsync(CancellationToken ct)
+    {
+        using var scope = _scopefactory.CreateScope();
+        var rulesDb = scope.ServiceProvider.GetRequiredService<RulesDbContext>();
+        var ingestDb = scope.ServiceProvider.GetRequiredService<IngestReadDbContext>();
+
+        //Hämta alla aktiva regler
+        var rules = await rulesDb.Rules
+            .AsNoTracking()
+            .Where(r => r.Enabled)
+            .ToListAsync(ct);
+
+        var now = DateTimeOffset.UtcNow;
+
+        foreach (var rule in rules)
+        {
+            //Senaste mätvärdet
+            var latest = await ingestDb.Measurements
+                .AsNoTracking()
+                .Where(m => m.DeviceId == rule.DeviceId && m.Type == rule.Type)
+                .OrderByDescending(m => m.Time)
+                .FirstOrDefaultAsync(ct);
+
+            if (latest is null)
+                continue;
+
+            if (now - latest.Time > MaxMeasurementAge)
+                continue;
+
+            if (!IsTriggered(latest.Value, rule.Operator, rule.Threshold))
+                continue;
+            //Cooldown
+            var lastAlert = await rulesDb.Alerts
+                .AsNoTracking()
+                .Where(a => a.RuleId == rule.Id)
+                .OrderByDescending(a => a.Time)
+                .FirstOrDefaultAsync(ct);
+
+            if (lastAlert is not null)
+            {
+                if (latest.Time <= lastAlert.Time)
+                    continue;
+
+                if (latest.Time - lastAlert.Time < Cooldown)
+                    continue;
+            }
+
+            //Skapa och spara larmet
+            var alert = new AlertRow
+            {
+                RuleId = rule.Id,
+                TenantSlug = rule.TenantSlug,
+                DeviceId = rule.DeviceId,
+                Type = rule.Type,
+                Value = latest.Value,
+                Operator = rule.Operator,
+                Threshold = rule.Threshold,
+                Message = FormattableString.Invariant($"{rule.Type} {latest.Value} {rule.Operator} {rule.Threshold}"),
+                Time = latest.Time
+            };
+
+            rulesDb.Alerts.Add(alert);
+            await rulesDb.SaveChangesAsync(ct);
+
+            _log.LogWarning("ALERT: device {deviceId} - {Message}", alert.DeviceId, alert.Message);
+
+            await PublishAlertAsync(alert, ct);
+        }
+    }
+
+    //Jämför värdet
+    private static bool IsTriggered(double value, string op, double threshold) => op switch
+    {
+        ">" => value > threshold,
+        ">=" => value >= threshold,
+        "<" => value < threshold,
+        "<=" => value <= threshold,
+        _ => false
+    };
+
+    //Skicka larmet till Realtime.Hub
+    private async Task PublishAlertAsync(AlertRow alert, CancellationToken ct)
+    {
+        try
+        {
+            if (_hub.State == HubConnectionState.Disconnected)
+                await _hub.StartAsync(ct);
+
+            if (_hub.State != HubConnectionState.Connected)
+            {
+                _log.LogWarning("Realtime.Hub not connected - alert {AlertId} saved but not published", alert.Id);
+                return;
+            }
+
+            await _hub.InvokeAsync("PublishAlert", alert, ct);
+            _log.LogInformation("Published alertRaised for device {DeviceId}", alert.DeviceId);
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "Failed to publish alert {AlertId} to Realtime.Hub", alert.Id);
         }
     }
 }

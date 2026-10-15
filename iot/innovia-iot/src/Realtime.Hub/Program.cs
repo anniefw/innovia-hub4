@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Primitives;
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSignalR();
 
@@ -33,6 +34,12 @@ public class TelemetryHub : Hub
         await Clients.Group($"tenant:{m.TenantSlug}")
             .SendAsync("measurementReceived", m);
     }
+
+    public async Task PublishAlert(RealtimeAlert alert)
+    {
+        await Clients.Group($"tenant:{alert.TenantSlug}")
+            .SendAsync("alertRaised", alert);
+    }
 }
 
 public record RealtimeMeasurement(
@@ -40,5 +47,18 @@ public record RealtimeMeasurement(
     System.Guid DeviceId,
     string Type,
     double Value,
+    System.DateTimeOffset Time
+);
+
+public record RealtimeAlert(
+    System.Guid Id,
+    System.Guid RuleId,
+    string TenantSlug,
+    System.Guid DeviceId,
+    string Type,
+    double Value,
+    string Operator,
+    double Threshold,
+    string Message,
     System.DateTimeOffset Time
 );
