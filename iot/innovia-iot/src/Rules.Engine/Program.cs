@@ -330,19 +330,18 @@ public class RuleRow
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 
-// Ett larm: "regel X slog till för enhet Y med värdet Z vid tiden T"
 public class AlertRow
 {
     public Guid Id { get; set; } = Guid.NewGuid();
-    public Guid RuleId { get; set; }                  // vilken regel som slog till
+    public Guid RuleId { get; set; }
     public string TenantSlug { get; set; } = "";
     public Guid DeviceId { get; set; }
     public string Type { get; set; } = "";
-    public double Value { get; set; }                 // mätvärdet som bröt regeln, t.ex. 29.3
-    public string Operator { get; set; } = "";        // kopior av regeln vid larmtillfället –
-    public double Threshold { get; set; }             // om regeln ändras senare stämmer larmet ändå
-    public string Message { get; set; } = "";         // läsbar text, t.ex. "temperature 29.3 > 28"
-    public DateTimeOffset Time { get; set; }          // när mätvärdet togs (UTC)
+    public double Value { get; set; }
+    public string Operator { get; set; } = "";
+    public double Threshold { get; set; }
+    public string Message { get; set; } = "";
+    public DateTimeOffset Time { get; set; }
 }
 
 // Mirror of Ingest measurement (read-only model)

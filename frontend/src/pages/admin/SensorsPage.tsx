@@ -4,24 +4,30 @@ import { useSensorReadings } from "../../hooks/useSensorReadings";
 import { useSensors } from "../../hooks/useSensors";
 import { groupByRoomType } from "../../lib/sensorGrouping";
 import { ResourceTypeFilter } from "../../components/ResourceTypeFilter";
+import { useSensorAlerts } from "../../hooks/useSensorAlerts";
+import { AlertBanner } from "./AlertBanner";
 
 function SensorCard({
   sensor,
   reading,
+  hasAlert = false,
 }: {
   sensor: Sensor;
   reading?: SensorReading;
+  hasAlert?: boolean;
 }) {
-  //{ sensor }: variabeln du använder inne i komponenten
-  // { sensor: … }: fältnamnet i typbeskrivningen
-  //Sensor (stor bokstav): typen från types.ts
   return (
-    <div className="flex flex-col h-full rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+    <div
+      className={`flex flex-col h-full rounded-xl border bg-white dark:bg-gray-900 p-4 ${
+        hasAlert
+          ? "border-red-400 dark:border-red-700 ring-2 ring-red-200 dark:ring-red-900" // larm → röd ram + "glöd"
+          : "border-gray-200 dark:border-gray-800" // normalt → grå ram
+      }`}
+    >
       {/*1. Rumsnamn*/}
       <p className="font-semibold text-gray-900 dark:text-gray-100">
         {sensor.roomName}
       </p>
-
       {/*2. Mätvärden*/}
       <div className="flex justify-center gap-8 my-4">
         <div className="text-center">
@@ -39,7 +45,6 @@ function SensorCard({
           </p>
         </div>
       </div>
-
       <div className="mt-auto border-t border-gray-100 dark:border-gray-800 pt-2 text-xs text-gray-500 dark:text-gray-400 flex justify-between">
         <span>
           {sensor.serial} · {sensor.model}
@@ -56,7 +61,12 @@ function SensorCard({
 const SensorsPage = () => {
   const { data: sensors, isLoading, error } = useSensors();
   const { readings, isLive } = useSensorReadings();
+  const { alerts, dismiss } = useSensorAlerts();
+
   const [selectedType, setSelectedType] = useState<string | null>(null);
+
+  const alertedDeviceIds = new Set(alerts.map((a) => a.deviceId));
+
   const grouped = groupByRoomType(sensors ?? []);
   const typeOptions = [...grouped.keys()].map((type) => ({
     id: type,
@@ -90,6 +100,10 @@ const SensorsPage = () => {
         />
       )}
 
+      {sensors && (
+        <AlertBanner alerts={alerts} sensors={sensors} onDismiss={dismiss} />
+      )}
+
       {isLoading && <p className="text-gray-500">Laddar sensorer...</p>}
 
       {/* error.message kommer från ApiError i client.ts → backendens "detail"-text */}
@@ -120,6 +134,7 @@ const SensorsPage = () => {
                     key={sensor.id}
                     sensor={sensor}
                     reading={readings[sensor.id]}
+                    hasAlert={alertedDeviceIds.has(sensor.id)}
                   />
                 ))}
               </div>

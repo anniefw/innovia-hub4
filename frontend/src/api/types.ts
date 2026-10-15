@@ -115,3 +115,16 @@ export interface SensorReading {
   co2?: number;
   time?: string;
 }
+
+export interface AlertRaised {
+  id: string;
+  ruleId: string;
+  tenantSlug: string;
+  deviceId: string;
+  type: string;
+  value: number;
+  operator: string;
+  threshold: number;
+  message: string;
+  time: string;
+}
