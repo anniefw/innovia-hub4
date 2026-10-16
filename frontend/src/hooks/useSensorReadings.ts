@@ -14,19 +14,17 @@ export function useSensorReadings() {
 
     function handleMeasurement(m: MeasurementReceived) {
       setReadings((prev) => ({
-        ...prev, //behåll alla andra sensorers värde
+        ...prev,
         [m.deviceId]: {
-          ...prev[m.deviceId], //behåll den här sensors andra värde
-          [m.type]: m.value, //uppdatera bara den typ som kom in
+          ...prev[m.deviceId],
+          [m.type]: m.value,
           time: m.time,
         },
       }));
     }
 
-    //börja lyssna på eventet
     conn.on(MEASUREMENT_RECEIVED, handleMeasurement);
 
-    //anslut och gå med i grupp
     (async () => {
       try {
         await ensureStarted(conn);
@@ -38,7 +36,6 @@ export function useSensorReadings() {
       }
     })();
 
-    //när sidan stängs
     return () => {
       conn.off(MEASUREMENT_RECEIVED, handleMeasurement);
     };

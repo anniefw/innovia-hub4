@@ -14,13 +14,12 @@ export function useSensorAlerts() {
 
   useEffect(() => {
     const conn = getSensorHubConnection();
-    // funktion som körs när ett larm kommer in: lägg det nya larmet FÖRST i listan, behåll bara de X senaste
     function handleAlert(alert: AlertRaised) {
       setAlerts((prev) => [alert, ...prev].slice(0, MAX_ALERTS));
     }
-    // börja lyssna på eventet
+
     conn.on(ALERT_RAISED, handleAlert);
-    //starta anslutningen och gå med i tenantens grupp
+
     (async () => {
       try {
         await ensureStarted(conn);
@@ -29,13 +28,12 @@ export function useSensorAlerts() {
         console.error("Could not connect to Realtime.Hub for alerts", err);
       }
     })();
-    // städa upp: sluta lyssna
+
     return () => {
       conn.off(ALERT_RAISED, handleAlert);
     };
   }, []);
 
-  //Ta bort alarm
   const dismiss = useCallback((id: string) => {
     setAlerts((prev) => prev.filter((a) => a.id !== id));
   }, []);

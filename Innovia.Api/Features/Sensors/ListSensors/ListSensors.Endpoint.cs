@@ -8,12 +8,12 @@ public static class Endpoint
     public static RouteHandlerBuilder Map(IEndpointRouteBuilder app)
     {
         return app.MapGet("/", async (
-            Handler handler, //skapas av DI
-            CancellationToken ct //avbryts om klienten stänger ner
+            Handler handler,
+            CancellationToken ct
         ) =>
         {
             var result = await handler.HandleAsync(ct);
-            return result.ToHttpResponse(); //Ok -> 200 + JSON, fail -> problem + JSON
+            return result.ToHttpResponse();
         });
-    } 
+    }
 }

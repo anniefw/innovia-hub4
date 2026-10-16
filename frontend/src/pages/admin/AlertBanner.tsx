@@ -17,11 +17,9 @@ export function AlertBanner({ alerts, sensors, onDismiss }: AlertBannerProps) {
   return (
     <div className="space-y-2 mb-6">
       {alerts.map((alert) => {
-        // Larmet har bara ett GUID – slå upp rummet i sensorlistan
         const sensor = sensors.find((s) => s.id === alert.deviceId);
         const roomName = sensor?.roomName ?? "Okänd sensor";
 
-        // Okänd typ? Visa typen som den är, utan enhet
         const { label, unit } = TYPE_LABELS[alert.type] ?? {
           label: alert.type,
           unit: "",
@@ -32,12 +30,11 @@ export function AlertBanner({ alerts, sensors, onDismiss }: AlertBannerProps) {
         return (
           <div
             key={alert.id}
-            role="alert" // skärmläsare läser upp rutan direkt när den dyker upp
+            role="alert"
             className="flex items-center gap-3 rounded-lg border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950 px-4 py-3"
           >
             <span aria-hidden="true">⚠️</span>
 
-            {/* flex-1 = ta all ledig plats → krysset hamnar längst till höger */}
             <p className="flex-1 text-sm text-red-800 dark:text-red-200">
               <span className="font-semibold">{roomName}:</span> {label}{" "}
               {alert.value} {unit} {alert.operator} {alert.threshold} {unit}
@@ -48,7 +45,7 @@ export function AlertBanner({ alerts, sensors, onDismiss }: AlertBannerProps) {
 
             <button
               onClick={() => onDismiss(alert.id)}
-              aria-label="Stäng larm" // ← knappen har bara "×" – berätta vad den gör
+              aria-label="Stäng larm"
               className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 text-lg leading-none"
             >
               ×

@@ -9,10 +9,6 @@ body {
   font-family: system-ui, "Segoe UI", Roboto, sans-serif;
 }
 
-/* ── Nova: bollen pulserar kort en gång var 20:e sekund ─────────────────────
-   Hela animationen är 20 s lång. Under 0–94 % händer ingenting.
-   Runt 97 % (≈ sekund 19,4) växer bollen lite och får en teal glöd,
-   sedan tillbaka till normal vid 100 %. Sedan börjar den om. */
 @keyframes nova-pulse {
   0%,
   50%,
@@ -31,8 +27,6 @@ body {
   border-radius: 9999px;
 }
 
-/* Tillgänglighet: om användaren har valt "minska rörelse" i sitt
-   operativsystem visas ingen animation. */
 @media (prefers-reduced-motion: reduce) {
   .nova-pulse {
     animation: none;

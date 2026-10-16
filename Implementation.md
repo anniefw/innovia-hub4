@@ -102,6 +102,8 @@ VG KRAV
 
 10. Larm skickas i realtid via Realtime.Hub (alertRaised). RealtimeHub fick en ny metod (PublishAlert) som skickar eventet alertRaised till tenantgruppen (innovia). Rules.Engine skickar larmet direkt efter att det sparats (sparas först ifall utskicket misslyckas). Testat med testklienten för att se alerten både i konsolen för webbläsaren och i konsolen för Rules.Engine.
 
+11. Larm visas på Sensor-sidan för admin via en alertBanner, samt att kortet får en röd ram. Admin kan stänga larmet med ett kryss och högst fem larm visas samtidigt för att inte överbelasta admin. Larmen tas emot över samma signalR-anslutning men hanteras i egen hook.
+
 ## Buggar/problem som fixats under projektet
 
 1. Realtime.Hub refererade ett föråldrat SignalR-paket, (ett paket från .NET Core 2.x). Paketet var onödigt och drog in gamla, sårbara beroenden (byggvarningar NU190x).
