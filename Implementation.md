@@ -1,6 +1,6 @@
 # Implementation
 
-För att se översikt av projektet, portlista, hur det startas etc, se README_Iot.
+Översikt och instruktioner för att starta projektet finns i [README_Iot.md](README_Iot.md).
 
 ## Ändringar som gjorts för att uppfylla kraven
 
