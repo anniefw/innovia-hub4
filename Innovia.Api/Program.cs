@@ -11,6 +11,7 @@ using Innovia.Api.Features.Occupancy;
 using Innovia.Api.Features.Realtime;
 using Innovia.Api.Features.Resources;
 using Innovia.Api.Features.ResourceTypes;
+using Innovia.Api.Features.Sensors;
 using Innovia.Api.Features.Users;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
@@ -88,6 +89,8 @@ builder.Services.AddUsersFeature();
 
 builder.Services.AddAssistantFeature(builder.Configuration);
 
+builder.Services.AddSensorsFeature(builder.Configuration);
+
 var app = builder.Build();
 
 app.UseForwardedHeaders();
@@ -120,6 +123,8 @@ app.MapOccupancyEndpoints();
 app.MapUsersEndpoints();
 
 app.MapAssistantEndpoints();
+
+app.MapSensorsEndpoints();
 
 
 app.Run();

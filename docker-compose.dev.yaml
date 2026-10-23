@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: innovia_pass
       POSTGRES_DB: innovia_db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - innovia_pgdata_dev:/var/lib/postgresql/data
     healthcheck:

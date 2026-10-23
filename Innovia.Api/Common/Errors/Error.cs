@@ -14,6 +14,8 @@ public record Error(string Message, ErrorType Type)
         new(message, ErrorType.Forbidden);
     public static Error Validation(string message) =>
         new(message, ErrorType.Validation);
+    public static Error Unavailable(string message) => 
+        new(message, ErrorType.Unavailable);
 }
 
 public enum ErrorType
@@ -23,6 +25,7 @@ public enum ErrorType
     Conflict,
     Forbidden,
     Validation,
+    Unavailable
 }
 
 public static class ErrorExtensions
@@ -53,6 +56,11 @@ public static class ErrorExtensions
             title: "Bad Request",
             detail: error.Message,
             statusCode: StatusCodes.Status400BadRequest
+        ),
+        ErrorType.Unavailable => Results.Problem(
+            title: "Service Unavailable",
+            detail: error.Message,
+            statusCode: StatusCodes.Status503ServiceUnavailable
         ),
         _ => throw new ArgumentOutOfRangeException(nameof(error.Type), "Unmapped ErrorType")
     };

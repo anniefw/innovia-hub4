@@ -12,6 +12,7 @@ import { BookingsAdminPage } from "./pages/admin/BookingsAdminPage";
 import { OccupancyPage } from "./pages/admin/OccupancyPage";
 import { UsersAdminPage } from "./pages/admin/UsersAdminPage";
 import { AssistantForLoggedIn } from "./components/AssistantWidget";
+import SensorsPage from "./pages/admin/SensorsPage";
 
 export default function App() {
   return (
@@ -73,6 +74,14 @@ export default function App() {
               element={
                 <ProtectedRoute requireAdmin>
                   <OccupancyPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/sensors"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <SensorsPage />
                 </ProtectedRoute>
               }
             />

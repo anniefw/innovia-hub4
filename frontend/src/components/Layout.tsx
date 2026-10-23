@@ -12,6 +12,7 @@ const adminLinks = [
   { to: "/admin/resource-types", label: "Resurstyper" },
   { to: "/admin/bookings", label: "Alla bokningar" },
   { to: "/admin/occupancy", label: "Beläggning" },
+  { to: "/admin/sensors", label: "Sensorer" },
   { to: "/admin/users", label: "Användare" },
 ];
 
@@ -78,11 +79,27 @@ export function Layout() {
             className="md:hidden -mr-1 flex h-9 w-9 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
           >
             {menuOpen ? (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
                 <path d="M6 6l12 12M18 6L6 18" />
               </svg>
             ) : (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
                 <path d="M4 7h16M4 12h16M4 17h16" />
               </svg>
             )}

@@ -91,3 +91,40 @@ export type RangeOccupancy = {
     percentage: number;
   }[];
 };
+
+export type Sensor = {
+  id: string;
+  serial: string;
+  model: string;
+  status: string;
+  roomId: string | null;
+  roomName: string;
+  roomType: string;
+};
+
+export interface MeasurementReceived {
+  tenantSlug: string;
+  deviceId: string;
+  type: string;
+  value: number;
+  time: string;
+}
+
+export interface SensorReading {
+  temperature?: number;
+  co2?: number;
+  time?: string;
+}
+
+export interface AlertRaised {
+  id: string;
+  ruleId: string;
+  tenantSlug: string;
+  deviceId: string;
+  type: string;
+  value: number;
+  operator: string;
+  threshold: number;
+  message: string;
+  time: string;
+}
