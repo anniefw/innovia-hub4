@@ -34,7 +34,7 @@ export default function AssistantWidget() {
 
   const canSend = input.trim() !== "" && !isStreaming;
 
-  // ── Stängd: rund flytande boll ──────────────────────────────────────────────
+  // Stängd
   if (!isOpen) {
     return (
       <div className="nova-pulse fixed bottom-6 right-6 z-50">
@@ -50,7 +50,7 @@ export default function AssistantWidget() {
     );
   }
 
-  // ── Öppen: hela panelen ─────────────────────────────────────────────────────
+  //Öppen
   return (
     <div className="fixed bottom-6 right-6 z-50 flex h-[32rem] w-[calc(100vw-3rem)] max-w-sm flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
       <div
@@ -88,7 +88,6 @@ export default function AssistantWidget() {
         </div>
       )}
 
-      {/* Meddelandelista */}
       <div className="flex-1 space-y-3 overflow-y-auto p-4">
         {messages.length === 0 && (
           <div className="space-y-3">
@@ -149,10 +148,6 @@ export default function AssistantWidget() {
             );
           })}
 
-        {/* {isWaitingForFirstChunk && (
-          <p className="text-sm italic text-gray-500">Nova skriver…</p>
-        )} */}
-
         {isWaitingForFirstChunk && (
           <div
             className="flex items-center gap-1 rounded-2xl bg-gray-100 px-4 py-3 w-fit"
@@ -173,7 +168,6 @@ export default function AssistantWidget() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Inmatning */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
