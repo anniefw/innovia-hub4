@@ -101,7 +101,7 @@ app.MapPost("/rules", async (CreateRuleRequest req, RulesDbContext db) =>
 app.MapGet("/rules", async (RulesDbContext db) =>
     Results.Ok(await db.Rules.OrderByDescending(r => r.CreatedAt).ToListAsync()));
 
-//GET /alerts – list latest alerts (filter on tenant/device is nice to have).
+//GET /alerts – list latest alerts 
 app.MapGet("/alerts", async (Guid? deviceId, RulesDbContext db) =>
 {
     var query = db.Alerts.AsQueryable();
@@ -145,8 +145,6 @@ public class RulesWorker : BackgroundService
     private static readonly TimeSpan MaxMeasurementAge = TimeSpan.FromSeconds(60);
     private readonly ILogger<RulesWorker> _log;
     private readonly IServiceScopeFactory _scopefactory;
-    // private readonly RulesDbContext _rules;
-    // private readonly IngestReadDbContext _ingest;
     private readonly HubConnection _hub;
 
     public RulesWorker(ILogger<RulesWorker> log, RulesDbContext rules, IServiceScopeFactory scopeFactory, HubConnection hub)
@@ -165,14 +163,6 @@ public class RulesWorker : BackgroundService
             try
             {
                 await EvaluateRulesAsync(stoppingToken);
-                // TODO: Load enabled rules from _rules.
-                // TODO: For each rule, fetch the latest measurement (device + type) from _ingest.
-                // TODO: Compare value against threshold using the rule's operator.
-                // TODO: Avoid alert spam (cooldown per rule/device?).
-                // TODO: Store an AlertRow and push it to Realtime.Hub.
-                //       NOTE: Realtime.Hub has no server method for alerts yet – it must be added there.
-                //       Browser clients should receive it as "alertRaised" in the tenant's group.
-                //       Hub groups are keyed on tenant *slug*, rules/measurements only know tenant *GUID*.
             }
             catch (Exception ex)
             {

@@ -20,15 +20,13 @@ function SensorCard({
     <div
       className={`flex flex-col h-full rounded-xl border bg-white dark:bg-gray-900 p-4 ${
         hasAlert
-          ? "border-red-400 dark:border-red-700 ring-2 ring-red-200 dark:ring-red-900" // larm → röd ram + "glöd"
-          : "border-gray-200 dark:border-gray-800" // normalt → grå ram
+          ? "border-red-400 dark:border-red-700 ring-2 ring-red-200 dark:ring-red-900"
+          : "border-gray-200 dark:border-gray-800"
       }`}
     >
-      {/*1. Rumsnamn*/}
       <p className="font-semibold text-gray-900 dark:text-gray-100">
         {sensor.roomName}
       </p>
-      {/*2. Mätvärden*/}
       <div className="flex justify-center gap-8 my-4">
         <div className="text-center">
           <p className="text-xs text-gray-500 dark:text-gray-400">Temperatur</p>
@@ -49,7 +47,6 @@ function SensorCard({
         <span>
           {sensor.serial} · {sensor.model}
         </span>
-        {/* ▶ UTC från servern → svensk lokal tid i webbläsaren */}
         {reading?.time && (
           <span>{new Date(reading.time).toLocaleTimeString("sv-SE")}</span>
         )}
@@ -77,7 +74,6 @@ const SensorsPage = () => {
   );
   return (
     <div>
-      {/* ▶ Rubrik + live-indikator på samma rad */}
       <div className="flex items-center gap-3 mb-4">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
           Sensorer
@@ -106,7 +102,6 @@ const SensorsPage = () => {
 
       {isLoading && <p className="text-gray-500">Laddar sensorer...</p>}
 
-      {/* error.message kommer från ApiError i client.ts → backendens "detail"-text */}
       {error && (
         <p className="rounded-md bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 p-3">
           {error.message}
@@ -114,12 +109,9 @@ const SensorsPage = () => {
       )}
 
       {sensors && (
-        // ▶ En sektion per grupp, med luft mellan (space-y-8)
         <div className="space-y-8">
-          {/* ▶ Map → array av [typnamn, sensorer] → en sektion per grupp */}
           {visibleGroups.map(([roomType, group]) => (
             <section key={roomType}>
-              {/* ▶ Rubrik med antal, t.ex. "Mötesrum (4)" */}
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
                 {roomType}{" "}
                 <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
@@ -127,7 +119,6 @@ const SensorsPage = () => {
                 </span>
               </h2>
 
-              {/* ▶ Samma rutnät som innan, men bara för den här gruppen */}
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {group.map((sensor) => (
                   <SensorCard

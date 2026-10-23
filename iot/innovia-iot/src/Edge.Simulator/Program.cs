@@ -51,7 +51,6 @@ while (true)
                 }
 
         };
-        //topic måste innehålla rätt serial (ingest.gateway läser ur topic)
         var topic = $"tenants/innovia/devices/{serial}/measurements";
         var json = JsonSerializer.Serialize(payload);
 
@@ -61,10 +60,8 @@ while (true)
             .Build();
 
         await client.PublishAsync(message);
-        // Kortare loggrad än originalet – 10 hela JSON-rader var 9:e sekund blir oläsligt
         Console.WriteLine($"[{DateTimeOffset.UtcNow:HH:mm:ss}] {serial} → {topic}");
     }
-    // Vänta EFTER att alla 10 skickats – inte mellan varje enhet
     await Task.Delay(interval);
 
 }

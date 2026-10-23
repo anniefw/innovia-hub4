@@ -159,7 +159,7 @@ app.Run();
 
 public class IngestDbContext : DbContext
 {
-    public IngestDbContext(DbContextOptions<IngestDbContext> o) : base(o) {}
+    public IngestDbContext(DbContextOptions<IngestDbContext> o) : base(o) { }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -195,14 +195,13 @@ public class IngestService
     public IngestService(IngestDbContext db, DeviceRegistryClient registry, IRealtimePublisher rt) { _db = db; _registry = registry; _rt = rt; }
     public async Task ProcessAsync(string tenant, MeasurementBatch payload)
     {
-        //Normaliserar till UTC för att undvika problem med olika tidszoner, Npqsql accepterar bara offset 0 för timestamp with timezone
         var timestampUtc = payload.Timestamp.ToUniversalTime();
-        // Resolve tenant and device using DeviceRegistry (tenant slug + device serial)
         var ids = await _registry.ResolveAsync(tenant, payload.DeviceId);
 
         foreach (var m in payload.Metrics)
         {
-            _db.Measurements.Add(new MeasurementRow {
+            _db.Measurements.Add(new MeasurementRow
+            {
                 Time = timestampUtc,
                 TenantId = ids.TenantId,
                 DeviceId = ids.DeviceId,
@@ -237,24 +236,24 @@ public class DeviceRegistryClient
         _cfg = cfg;
     }
 
-public async Task<(Guid TenantId, Guid DeviceId)> ResolveAsync(string tenantSlug, string deviceSerial)
-{
-    // Nyckeln måste vara unik per ENHET, inte bara per tenant (bugg: alla enheter fick dev-101:s GUID).
-    var cacheKey = $"{tenantSlug}:{deviceSerial}";
+    public async Task<(Guid TenantId, Guid DeviceId)> ResolveAsync(string tenantSlug, string deviceSerial)
+    {
+        // Changed to unique key
+        var cacheKey = $"{tenantSlug}:{deviceSerial}";
 
-    // Cache lookups so we don't hit DeviceRegistry on every message
-    if (_cache.TryGetValue(cacheKey, out var hit)) return hit;                      
+        // Cache lookups so we don't hit DeviceRegistry on every message
+        if (_cache.TryGetValue(cacheKey, out var hit)) return hit;
 
-    var tenant = await _http.GetFromJsonAsync<TenantDto>($"{_cfg.BaseUrl}/api/tenants/by-slug/{tenantSlug}")      
-                ?? throw new InvalidOperationException($"Tenant slug '{tenantSlug}' not found");                   
+        var tenant = await _http.GetFromJsonAsync<TenantDto>($"{_cfg.BaseUrl}/api/tenants/by-slug/{tenantSlug}")
+                    ?? throw new InvalidOperationException($"Tenant slug '{tenantSlug}' not found");
 
-    var device = await _http.GetFromJsonAsync<DeviceDto>($"{_cfg.BaseUrl}/api/tenants/{tenant.Id}/devices/by-serial/{deviceSerial}")
-                ?? throw new InvalidOperationException($"Device serial '{deviceSerial}' not found in tenant '{tenantSlug}'"); 
+        var device = await _http.GetFromJsonAsync<DeviceDto>($"{_cfg.BaseUrl}/api/tenants/{tenant.Id}/devices/by-serial/{deviceSerial}")
+                    ?? throw new InvalidOperationException($"Device serial '{deviceSerial}' not found in tenant '{tenantSlug}'");
 
-    var ids = (tenant.Id, device.Id);
-    _cache[cacheKey] = ids;                                                         
-    return ids;
-}
+        var ids = (tenant.Id, device.Id);
+        _cache[cacheKey] = ids;
+        return ids;
+    }
 
     private record TenantDto(Guid Id, string Name, string Slug);
     private record DeviceDto(Guid Id, Guid TenantId, Guid? RoomId, string Model, string Serial, string Status);
