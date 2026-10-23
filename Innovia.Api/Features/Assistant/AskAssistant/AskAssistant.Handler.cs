@@ -6,12 +6,13 @@ namespace Innovia.Api.Features.Assistant.AskAssistant;
 
 public sealed class Handler
 {
-    private const int maxHistoryMessages = 6;
+    private const int maxHistoryMessages = 6;  
     public const string FallBackPhrase = "Det hittar jag tyvärr ingen information om";
 
-    private readonly IChatClient _chatClient;
-    private readonly AssistantContextBuilder _contextBuilder;
-    private readonly ILogger<Handler> _logger;
+    private readonly IChatClient _chatClient; 
+    private readonly AssistantContextBuilder _contextBuilder; 
+    private readonly ILogger<Handler> _logger; 
+
 
     public Handler(IChatClient chatClient, AssistantContextBuilder contextBuilder, ILogger<Handler> logger)
     {
@@ -19,56 +20,53 @@ public sealed class Handler
         _contextBuilder = contextBuilder;
         _logger = logger;
     }
+
     public async Task<string> HandleAsync(Request request, CancellationToken ct)
     {
         var messages = await BuildMessagesAsync(request, ct);
-
         var response = await _chatClient.GetResponseAsync(messages, cancellationToken: ct);
 
         LogIfUnanswered(request.Question, response.Text);
 
         return response.Text;
     }
-
     public async IAsyncEnumerable<string> StreamAsync(
         Request request,
         [EnumeratorCancellation] CancellationToken ct
     )
     {
-        //1. Bygg meddelandelista
         var messages = await BuildMessagesAsync(request, ct);
 
-        //logging
         var fullAnswer = new StringBuilder();
 
-        //2. Be Ai:n om strömmade/streaming svar. "await foreach" = loopa över bitar som kommer in över tid.
-        await foreach (var update in _chatClient.GetStreamingResponseAsync(messages, cancellationToken: ct))
+        await foreach (var update in _chatClient.GetStreamingResponseAsync(messages, cancellationToken: ct ))
         {
-            if (string.IsNullOrEmpty(update.Text))
+            if(string.IsNullOrEmpty(update.Text))
                 continue;
 
             fullAnswer.Append(update.Text);
 
             yield return update.Text;
-
+            
         }
 
         LogIfUnanswered(request.Question, fullAnswer.ToString());
-
-
+       
     }
+
     private void LogIfUnanswered(string question, string answer)
     {
         if (!answer.Contains(FallBackPhrase, StringComparison.OrdinalIgnoreCase))
-            return;
+        return;
 
         _logger.LogInformation("Nova kunde inte svara på frågan: {Question}", question);
 
     }
+
     private async Task<List<ChatMessage>> BuildMessagesAsync(Request request, CancellationToken ct)
     {
-        var systemPrompt = await _contextBuilder.ReadSystemPromptAsync(ct);
-        var context = await _contextBuilder.BuildAsync(ct);
+        var systemPrompt = await _contextBuilder.ReadSystemPromptAsync(ct);  
+        var context = await _contextBuilder.BuildAsync(ct);                 
 
         var messages = new List<ChatMessage>
         {

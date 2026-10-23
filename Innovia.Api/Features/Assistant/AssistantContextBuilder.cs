@@ -12,6 +12,7 @@ public sealed class AssistantContextBuilder
     private const string AssistantFolder = "Features/Assistant";
     private const string KnowledgeFileName = "knowledge.md";
     private const string SystemPromptFileName = "systemprompt.md";
+
     private static readonly DayOfWeek[] SwedishWeekOrder = [
         DayOfWeek.Monday,
         DayOfWeek.Tuesday,
@@ -22,26 +23,25 @@ public sealed class AssistantContextBuilder
         DayOfWeek.Sunday
     ];
 
-    private static readonly CultureInfo Swedish = new("sv-SE");
+    private static readonly CultureInfo Swedish = new ("sv-SE");
 
     private readonly AppDbContext _context;
 
-    public AssistantContextBuilder(AppDbContext context)
+    public AssistantContextBuilder (AppDbContext context)
     {
         _context = context;
     }
 
     public Task<string> ReadSystemPromptAsync(CancellationToken ct) =>
         ReadAssistantFileAsync(SystemPromptFileName, ct);
-    public async Task<string> BuildAsync(CancellationToken ct)
+     public async Task<string> BuildAsync (CancellationToken ct)
     {
-        var now = BuildCurrentTime();
-        var knowledge = await ReadAssistantFileAsync(KnowledgeFileName, ct);
-        var openingHours = await BuildOpeningHoursAsync(ct);
-        var resources = await BuildResourcesAsync(ct);
+        var now = BuildCurrentTime(); 
+        var knowledge = await ReadAssistantFileAsync(KnowledgeFileName, ct); 
+        var openingHours = await BuildOpeningHoursAsync(ct); 
+        var resources = await BuildResourcesAsync(ct); 
 
-
-        return $"""
+                return $"""
             --- AKTUELL TID ---
             {now}
 
@@ -53,22 +53,22 @@ public sealed class AssistantContextBuilder
 
             --- RESURSER OCH AKTUELL STATUS ---
             {resources}
-            """;
+            """;                         
 
 
     }
-
     private static string BuildCurrentTime()
     {
         var swedishNow = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, SwedenTimeZone.Instance);
-
+        
         return swedishNow.ToString("dddd d MMMM yyyy 'kl.' HH:mm", Swedish);
     }
+
     private async Task<string> ReadAssistantFileAsync(string fileName, CancellationToken ct)
     {
         var path = Path.Combine(AppContext.BaseDirectory, AssistantFolder, fileName);
 
-        if (!File.Exists(path))
+        if(!File.Exists(path))
         {
             throw new FileNotFoundException(
                 $"Filen '{fileName}' hittades inte på '{path}'. " +
@@ -82,62 +82,54 @@ public sealed class AssistantContextBuilder
 
     private async Task<string> BuildOpeningHoursAsync(CancellationToken ct)
     {
-
         var resourceTypes = await _context.ResourceTypes
         .AsNoTracking()
         .OrderBy(rt => rt.Name)
         .ToListAsync(ct);
 
-
         var rules = await _context.AvailabilityRules
         .AsNoTracking()
         .ToListAsync(ct);
 
-
         var sb = new StringBuilder();
 
-        foreach (var type in resourceTypes)
+        foreach(var type in resourceTypes)
         {
-
             sb.AppendLine($"{type.Name} (max {FormatDuration(type.MaxDurationMinutes)} per bokning," + $" kan bokas max {type.MaxAdvanceDays} dagar i förväg):");
 
-
-            foreach (var day in SwedishWeekOrder)
+            
+            foreach(var day in SwedishWeekOrder)
             {
-
-                var rule = rules.FirstOrDefault(r =>
+                var rule = rules.FirstOrDefault(r => 
                 r.ResourceTypeId == type.Id &&
                 r.DayOfWeek == day);
 
                 var dayName = Swedish.DateTimeFormat.GetDayName(day);
 
-
-                if (rule is null)
+                if(rule is null)
                 {
                     sb.AppendLine($"- {dayName}: stängt, kan inte bokas.");
-                }
-                else
+                } else 
                 {
                     var opens = rule.OpensAt.ToString("HH:mm");
                     var closes = rule.ClosesAt.ToString("HH:mm");
                     sb.AppendLine($"- {dayName}: {opens} - {closes}");
-
+                    
                 }
             }
-            sb.AppendLine();
+            sb.AppendLine(); 
         }
 
-        return sb.ToString().Trim();
-
+        return sb.ToString().Trim(); 
+            
     }
 
-    private static string FormatDuration(int minutes) =>
+    private static string FormatDuration(int minutes) => 
         minutes % 60 == 0
-        ? $"{minutes / 60} h"
+        ? $"{minutes/60} h"
         : $"{minutes} min";
     private async Task<string> BuildResourcesAsync(CancellationToken ct)
     {
-
         var resourcetypes = await _context.ResourceTypes
             .AsNoTracking()
             .OrderBy(rt => rt.Name)
@@ -145,15 +137,14 @@ public sealed class AssistantContextBuilder
 
         var resources = await _context.Resources
             .AsNoTracking()
-            .Where(r => r.Status != ResourceStatus.Archived)
+            .Where(r => r.Status != ResourceStatus.Archived) 
             .OrderBy(r => r.Name)
             .ToListAsync(ct);
 
-        var sb = new StringBuilder();
+        var sb = new StringBuilder(); 
 
-        foreach (var type in resourcetypes)
+        foreach(var type in resourcetypes) 
         {
-
             var resourcesOfType = resources
                 .Where(rot => rot.ResourceTypeId == type.Id)
                 .ToList();
@@ -164,26 +155,26 @@ public sealed class AssistantContextBuilder
 
             var statusGroups = resourcesOfType
             .GroupBy(r => r.Status)
-            .OrderBy(g => g.Key);
+            .OrderBy(g => g.Key); 
 
-            foreach (var group in statusGroups)
+            foreach (var group in statusGroups) 
+
             {
                 var names = string.Join(", ", group.Select(g => g.Name));
 
                 sb.AppendLine($"-{DescribeStatus(group.Key)}: {names}");
             }
-            sb.AppendLine();
+            sb.AppendLine(); 
         }
 
-        return sb.ToString().Trim();
+        return sb.ToString().Trim(); 
     }
-
     private static string DescribeStatus(ResourceStatus status) => status switch
     {
         ResourceStatus.Online => "Tillgängliga att boka",
         ResourceStatus.Offline => "Ur drift (kan tyvärr inte bokas i nuläget)",
         ResourceStatus.Maintenance => "Underhåll (kan tyvärr inte bokas i nuläget)",
-        _ => status.ToString()
+        _ => status.ToString() 
     };
 
 }

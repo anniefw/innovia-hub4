@@ -37,7 +37,6 @@ const statusListeners = new Set<(s: ConnectionStatus) => void>();
 
 function buildConnection(): HubConnection {
   const conn = new HubConnectionBuilder()
-    // withCredentials: skicka med inloggningscookien när anslutningen öppnas
     .withUrl(`${BASE_URL}/hubs/chat`, { withCredentials: true })
     .configureLogging(LogLevel.Information)
     .withAutomaticReconnect()
@@ -86,7 +85,6 @@ async function startWithRefresh(conn: HubConnection): Promise<void> {
   }
   setStatus("connected");
 }
-
 export function getChatHubConnection(): HubConnection {
   if (!connection) {
     connection = buildConnection();
