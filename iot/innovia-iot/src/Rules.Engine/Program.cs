@@ -81,7 +81,7 @@ app.MapPost("/rules", async (CreateRuleRequest req, RulesDbContext db) =>
         errors["operator"] = [$"Operator måste vara en av: {string.Join(", ", allowedOperators)}."];
 
     if (errors.Count > 0)
-        return Results.ValidationProblem(errors);   // → 400 Bad Request med alla fel
+        return Results.ValidationProblem(errors);
 
     var rule = new RuleRow
     {

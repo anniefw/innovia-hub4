@@ -211,7 +211,6 @@ public class IngestService
         }
         await _db.SaveChangesAsync();
 
-        // Publish in realtime
         foreach (var m in payload.Metrics)
         {
             await _rt.PublishAsync(tenant, ids.DeviceId, m.Type, m.Value, timestampUtc);
