@@ -57,7 +57,7 @@ function SensorCard({
 
 const SensorsPage = () => {
   const { data: sensors, isLoading, error } = useSensors();
-  const { readings, isLive } = useSensorReadings();
+  const { readings, status, isLive } = useSensorReadings();
   const { alerts, dismiss } = useSensorAlerts();
 
   const [selectedType, setSelectedType] = useState<string | null>(null);
@@ -84,7 +84,11 @@ const SensorsPage = () => {
           <span
             className={`h-2 w-2 rounded-full ${isLive ? "bg-green-500 animate-pulse" : "bg-gray-400"}`}
           />
-          {isLive ? "Live" : "Ej ansluten"}
+          {status === "live"
+            ? "Live"
+            : status === "connecting"
+              ? "Ansluter…"
+              : "Offline"}
         </span>
       </div>
 
@@ -103,8 +107,16 @@ const SensorsPage = () => {
       {isLoading && <p className="text-gray-500">Laddar sensorer...</p>}
 
       {error && (
-        <p className="rounded-md bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 p-3">
-          {error.message}
+        <div className="rounded-md bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 p-3">
+          <p className="font-medium">Sensorerna är offline just nu</p>
+          <p className="text-sm">{error.message}</p>
+        </div>
+      )}
+
+      {sensors && status === "offline" && (
+        <p className="mb-4 rounded-md bg-amber-50 dark:bg-amber-950 text-amber-800 dark:text-amber-300 p-3 text-sm">
+          Live-värden är inte tillgängliga eftersom IoT-tjänsten är offline.
+          Senast kända värden visas inte.
         </p>
       )}
 

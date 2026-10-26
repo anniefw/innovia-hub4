@@ -1,25 +1,31 @@
 import { useEffect, useState } from "react";
-import { getSensorHubConnection, joinTenant } from "../lib/sensorHubConnection";
-import { ensureStarted } from "../lib/bookingHubConnection";
+import {
+  ensureStarted,
+  getSensorHubConnection,
+  isRealtimeConfigured,
+  joinTenant,
+} from "../lib/sensorHubConnection";
 import type { MeasurementReceived, SensorReading } from "../api/types";
 
 const MEASUREMENT_RECEIVED = "measurementReceived";
 
+export type SensorConnectionStatus = "connecting" | "live" | "offline";
+
 export function useSensorReadings() {
   const [readings, setReadings] = useState<Record<string, SensorReading>>({});
-  const [isLive, setIsLive] = useState(false);
+  const [status, setStatus] = useState<SensorConnectionStatus>(
+    isRealtimeConfigured ? "connecting" : "offline",
+  );
 
   useEffect(() => {
+    if (!isRealtimeConfigured) return;
+
     const conn = getSensorHubConnection();
 
     function handleMeasurement(m: MeasurementReceived) {
       setReadings((prev) => ({
         ...prev,
-        [m.deviceId]: {
-          ...prev[m.deviceId],
-          [m.type]: m.value,
-          time: m.time,
-        },
+        [m.deviceId]: { ...prev[m.deviceId], [m.type]: m.value, time: m.time },
       }));
     }
 
@@ -29,10 +35,10 @@ export function useSensorReadings() {
       try {
         await ensureStarted(conn);
         await joinTenant(conn);
-        setIsLive(true);
+        setStatus("live");
       } catch (err) {
         console.error("Could not connect to Realtime.Hub", err);
-        setIsLive(false);
+        setStatus("offline");
       }
     })();
 
@@ -41,5 +47,5 @@ export function useSensorReadings() {
     };
   }, []);
 
-  return { readings, isLive };
+  return { readings, status, isLive: status === "live" };
 }

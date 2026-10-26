@@ -5,8 +5,12 @@ import {
   LogLevel,
 } from "@microsoft/signalr";
 
-const REALTIME_URL =
-  import.meta.env.VITE_REALTIME_URL ?? "http://localhost:5103";
+const REALTIME_URL: string | null =
+  import.meta.env.VITE_REALTIME_URL ??
+  (import.meta.env.DEV ? "http://localhost:5103" : null);
+
+export const isRealtimeConfigured = REALTIME_URL !== null;
+
 const TENANT_SLUG = import.meta.env.VITE_IOT_TENANT ?? "innovia";
 
 let connection: HubConnection | null = null;
