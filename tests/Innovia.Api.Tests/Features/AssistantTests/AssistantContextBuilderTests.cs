@@ -144,8 +144,8 @@ public class AssistantContextBuilderTests
         Assert.Contains("max 4 h per bokning", section);
         Assert.Contains("måndag: 08:00", section);
         Assert.Contains("fredag: 08:00", section);
-        Assert.Contains("lördag: kan inte bokas", section);
-        Assert.Contains("söndag: kan inte bokas", section);
+        Assert.Contains("lördag: stängt, kan inte bokas", section);
+        Assert.Contains("söndag: stängt, kan inte bokas", section);
     }
 
     // ── Resursstatus ──────────────────────────────────────────────────────────
