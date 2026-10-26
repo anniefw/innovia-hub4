@@ -21,12 +21,12 @@ Innovia Hub är ett bokningssystem för coworkingcentret Innovia Hub. Medlemmar 
 
 ## Testa den driftsatta versionen
 
-**Länk:**
+**Länk:** https://innovia.157-230-105-26.sslip.io
 
 | Roll   | E-post          | Lösenord     |
 | ------ | --------------- | ------------ |
 | Admin  | admin@admin.com | Password123! |
-| Medlem |                 |              |
+| Medlem | test@test.com   | Password123! |
 
 Du kan också registrera ett eget medlemskonto via **Registrera**.
 
@@ -36,7 +36,7 @@ Du kan också registrera ett eget medlemskonto via **Registrera**.
 2. **Realtid:** Öppna appen i två fönster, ett som medlem och ett som admin (t.ex. ett vanligt och ett inkognitofönster).
    - Boka som medlem → bokningen dyker upp direkt under **Alla bokningar** hos admin, och beläggningsdiagrammet uppdateras.
    - Sätt en resurs i **Underhåll** som admin (**Resurser**) → statusen ändras direkt i medlemmens resurslista.
-3. **AI-assistenten Nova:** Klicka på den runda knappen nere till höger (syns för inloggade). Prova förslagsknapparna eller frågor som _"Vilka mötesrum finns?"_, _"När har ni öppet på lördag?"_, _"Finns det kaffe?"_ och följdfrågan _"Hur många då?"_. Svaret strömmas fram i realtid.
+3. **AI-assistenten Nova:** Klicka på den runda knappen nere till höger (syns för inloggade). Prova förslagsknapparna eller frågor som _"Vilka mötesrum finns?"_, _"När har ni öppet på lördag?"_, _"Finns det kaffe?"_. Svaret strömmas fram i realtid. Möjligheten till följdfrågor finns då Nova har en medskickad historik på 6 meddelanden.
 4. **Admin:** **Resurstyper** (öppettider och bokningsregler), **Användare**, **Beläggning** (välj datumintervall).
 5. **Sensorer (IoT):** IoT-tjänsterna är inte driftsatta (enligt uppgiften). Sidan **Sensorer** visar därför ett tydligt meddelande om att sensortjänsten är offline, i stället för att appen kraschar. Hur IoT-delen körs lokalt beskrivs i [docs/README_Iot.md](docs/README_Iot.md).
 
@@ -70,7 +70,7 @@ Projektet började som ett grupparbete (bokningsflöde, inloggning, resurshanter
 | **AI – husassistenten Nova** | Chattwidget med strömmade svar via SignalR (`/hubs/chat`). Svarar utifrån `knowledge.md` och live-data ur databasen (tid, öppettider, resursstatus). Följdfrågor, rate limit (20 frågor/timme), skydd mot prompt-manipulation, stoppknapp, anslutningsstatus och 38 enhetstester. Se [docs/README_Nova.md](docs/README_Nova.md).                                                  |
 | **IoT-integration**          | Integration med IoT-tjänsterna (DeviceRegistry, Ingest.Gateway, Realtime.Hub, Rules.Engine, Edge.Simulator): 20 simulerade sensorer, `GET /sensors` i API:t, sensorsida med live-värden, larmregler i Rules.Engine och larm i realtid i UI:t. Flera buggar i IoT-tjänsterna rättade. Se [docs/README_Iot.md](docs/README_Iot.md) och [Implementation.md](docs/Implementation.md). |
 | **Offline-hantering (IoT)**  | Sensorsidan visar tydligt när sensortjänsten är offline: felruta vid 503 (utan onödiga omförsök) och en statusbadge Live/Ansluter…/Offline. Ingen anslutning görs till Realtime.Hub när den inte är konfigurerad, vilket gäller i produktion.                                                                                                                                     |
-| **Driftsättning**            | Novas kunskapsfiler inkluderade i Docker-imagen och OpenAI-nyckeln som miljövariabel i produktion.                                                                                                                                                                                                                                                                                |
+| **Driftsättning och CI/CD**  | Driftsättning på DigitalOcean (Droplet, Docker Compose, Caddy med automatisk HTTPS) med CI/CD via GitHub Actions. Novas kunskapsfiler inkluderade i Docker-imagen och OpenAI-nyckeln som miljövariabel i produktion. Felsökning av CI: ett TypeScript-fel som stoppade frontend-bygget, integrationstester som krävde en OpenAI-nyckel och ett inaktuellt test.                   |
 
 ---
 
@@ -218,14 +218,16 @@ IoT-tjänsterna är valfria lokalt. Utan dem visar sensorsidan att tjänsten är
 
 Lokalt läser backend från `Innovia.Api/appsettings.json` och user-secrets. I produktion sätts allt som miljövariabler (se [`example.env`](example.env)). Dubbelt understreck motsvarar kolon, t.ex. `OpenAI__ApiKey` = `OpenAI:ApiKey`.
 
-| Variabel                                              | Beskrivning                                                  |
-| ----------------------------------------------------- | ------------------------------------------------------------ |
-| `OPENAI_API_KEY`                                      | **Hemlig.** OpenAI-nyckel till Nova                          |
-| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Databasuppgifter                                             |
-| `JWT_ISSUER` / `JWT_AUDIENCE` / `JWT_SECRET`          | JWT-inställningar. Secret ska vara lång och slumpad          |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD`                      | Admin-kontot som seedas vid första start                     |
-| `FRONTEND_ORIGIN`                                     | Frontendens adress, tillåts av CORS (krävs även för SignalR) |
-| `VITE_API_URL`                                        | API:ts adress. Bakas in i frontend vid bygget                |
+| Variabel                                              | Beskrivning                                                                       |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `OPENAI_API_KEY`                                      | **Hemlig.** OpenAI-nyckel till Nova                                               |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Databasuppgifter                                                                  |
+| `JWT_ISSUER` / `JWT_AUDIENCE` / `JWT_SECRET`          | JWT-inställningar. Secret ska vara lång och slumpad                               |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD`                      | Admin-kontot som seedas vid första start                                          |
+| `FRONTEND_ORIGIN`                                     | Frontendens adress, tillåts av CORS (krävs även för SignalR)                      |
+| `VITE_API_URL`                                        | API:ts adress. Bakas in i frontend vid bygget                                     |
+| `APP_DOMAIN` / `API_DOMAIN`                           | Adresserna Caddy hämtar HTTPS-certifikat för och skickar vidare till frontend/api |
+| `GHCR_OWNER`                                          | GitHub-kontot vars images hämtas från GitHub Container Registry                   |
 
 ---
 
@@ -244,6 +246,31 @@ GitHub Actions (`.github/workflows/ci.yaml`) bygger och testar backend samt lint
 
 ## Driftsättning
 
+Applikationen körs på en **DigitalOcean Droplet** (Ubuntu, 2 GB RAM) med Docker Compose.
+
+**Containrar** (`docker-compose.prod.yaml`):
+
+| Container  | Roll                                                                                           |
+| ---------- | ---------------------------------------------------------------------------------------------- |
+| `caddy`    | Reverse proxy och automatisk HTTPS (Let's Encrypt). Enda containern med öppna portar (80/443). |
+| `frontend` | Byggd React-app, serverad som statiska filer                                                   |
+| `api`      | Innovia.Api (ASP.NET Core)                                                                     |
+| `postgres` | Databas, på ett internt nätverk som inte nås utifrån                                           |
+
+**Domän:** https://innovia.157-230-105-26.sslip.io/
+Servern har ingen egen domän, så den använder [sslip.io](https://sslip.io), som översätter `innovia.157-230-105-26.sslip.io` och `api.157-230-105-26.sslip.io` direkt till serverns IP-adress. Frontend och API får egna adresser men räknas som samma sajt, så inloggningscookien fungerar i alla webbläsare.
+
+**CI/CD** (GitHub Actions):
+
+1. `ci.yaml` bygger och testar backend och frontend vid varje pull request.
+2. `deploy.yaml` körs vid push till `main`: bygger Docker-images för API och frontend, publicerar dem i GitHub Container Registry, kopierar `docker-compose.prod.yaml` och `Caddyfile` till servern via SSH och startar om containrarna med den nya versionen.
+
+**Hemligheter och miljökonfiguration:**
+
+- På servern ligger en `.env` (endast läsbar för användaren `deploy`) med databaslösenord, JWT-secret, admin-konto och OpenAI-nyckel. Den finns aldrig i git.
+- I GitHub ligger SSH-uppgifterna som secrets (`DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_PATH`, `DEPLOY_SSH_KEY`) och API-adressen som variabeln `VITE_API_URL`, som bakas in i frontend vid bygget.
+- GitHub Actions loggar in som en egen användare (`deploy`) med SSH-nyckel, inte som root.
+
 ---
 
 ## Säkerhet
@@ -261,6 +288,9 @@ GitHub Actions (`.github/workflows/ci.yaml`) bygger och testar backend samt lint
 - IoT-tjänsterna är inte driftsatta, så sensorsidan visar inga live-värden i den publicerade versionen.
 - Realtime.Hub (IoT) saknar inloggning. Vem som helst som når den kan lyssna och skicka värden. Därför körs den bara lokalt.
 - Nova minns bara de 6 senaste meddelandena och glömmer konversationen när sidan laddas om.
+- Servern har ingen egen domän, utan använder sslip.io. Det räcker för test men inte för en riktig kund.
+- DataProtection-nycklarna sparas inne i API-containern och försvinner vid omstart. Inloggningen påverkas inte (den bygger på JWT), men funktioner som e-postbekräftelse skulle göra det.
+- Ingen automatisk backup av databasen.
 
 ---
 
