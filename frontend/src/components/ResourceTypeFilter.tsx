@@ -1,5 +1,3 @@
-import type { ResourceType } from "../api/types";
-
 export function ResourceTypeFilter({
   resourceTypes,
   selectedTypeId,
