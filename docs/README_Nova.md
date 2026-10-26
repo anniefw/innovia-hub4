@@ -42,11 +42,11 @@ Nova svarar utifrån två olika informationskanaler.
 
 ## Kom igång med Nova
 
-Följ först **Kom igång lokalt** i [README.md](README.md). Nova kräver sedan ett steg till: en OpenAI-nyckel.
+Följ först **Kom igång lokalt** i [README.md](../README.md). Nova kräver sedan ett steg till: en OpenAI-nyckel.
 
 > ⚠️ Utan nyckel **startar inte API:et**.
 
-### Alternativ B: native (rekommenderas)
+### Alternativ A: native (rekommenderas)
 
 ```powershell
 cd Innovia.Api
@@ -57,7 +57,7 @@ dotnet run
 
 Nyckeln sparas utanför repot (`%APPDATA%\Microsoft\UserSecrets\<UserSecretsId>\secrets.json` på Windows) och kan alltså inte råka committas.
 
-### Alternativ A: allt i Docker
+### Alternativ B: allt i Docker
 
 User-secrets når inte in i containern. Sätt därför nyckeln som miljövariabel i en `.env`-fil bredvid `docker-compose.dev.yaml` (`.env` ignoreras av git):
 
@@ -73,7 +73,7 @@ docker compose -f docker-compose.dev.yaml up
 
 1. Logga in i frontend (`http://localhost:5173`).
 2. Klicka på Nova-bollen nere till höger.
-3. Prova förslagsknapparna, skriv en egen fråga eller pröva frågor från [testfragor.md](Innovia.Api/Features/Assistant/testfragor.md).
+3. Prova förslagsknapparna, skriv en egen fråga eller pröva frågor från [testfragor.md](../Innovia.Api/Features/Assistant/testfragor.md).
 
 ---
 
@@ -143,7 +143,7 @@ Kunskapen är liten (några få sidor), så det här räcker i nuläget. Ingen v
 - **Beteende** (ton, regler, reservfras): redigera `systemprompt.md`.
   - ⚠️ Ändrar du reservfrasen måste `Handler.FallBackPhrase` matcha, annars slutar loggningen av obesvarade frågor att fungera. Testet `Should_Use_Same_Message_List_When_Streaming` blir rött om de inte matchar.
 - **Öppettider och resurser**: ändras i databasen. Nova ser ändringen vid nästa fråga.
-- Kör [testfragor.md](Innovia.Api/Features/Assistant/testfragor.md) efter varje ändring.
+- Kör [testfragor.md](../Innovia.Api/Features/Assistant/testfragor.md) efter varje ändring.
 
 ---
 
@@ -186,6 +186,6 @@ Inga tester anropar OpenAI. En `FakeChatClient` ersätter den riktiga klienten, 
 | API:et startar inte: `OpenAI:ApiKey saknas` | Sätt nyckeln med user-secrets (native) eller `OPENAI_API_KEY` i `.env` (Docker).                                                          |
 | Bollen syns inte                            | Du är inte inloggad. Widgeten visas bara för inloggade.                                                                                   |
 | Röd banner direkt / CORS-fel i konsolen     | Kontrollera att `Cors:FrontendOrigin` matchar frontendens adress.                                                                         |
-| 401 på `/hubs/chat`                         | Kör frontend och backend på samma schema (båda `http` eller båda `https`), se huvud-README.                                               |
+| 401 på `/hubs/chat`                         | Kontrollera att du är inloggad och att Cors:FrontendOrigin matchar frontendens adress.                                                    |
 | Konstigt svar                               | Öppna `GET /assistant/context` som admin (Scalar) och se exakt vad Nova läser. Kan du inte svara utifrån texten kan Nova det inte heller. |
 | Vilka frågor kunde Nova inte svara på?      | Sök efter `Nova kunde inte svara på frågan` i API-terminalens logg.                                                                       |

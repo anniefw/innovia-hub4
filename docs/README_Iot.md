@@ -51,7 +51,7 @@ En konsolapp som simulerar IoT-enheter och skickar data via MQTT. Används för 
 ### Förutsättningar
 
 - Docker Desktop, .NET 8 SDK, .NET 10 SDK, Node.js
-- OpenAI-nyckel för Innovia.Api (krävs för att API:t ska starta, se README_Nova.md):
+- OpenAI-nyckel för Innovia.Api (krävs för att API:t ska starta, se [README_Nova.md](README_Nova.md)):
   `cd Innovia.Api` → `dotnet user-secrets set "OpenAI:ApiKey" "sk-..."`
 
 ### Första gången (i denna ordning)

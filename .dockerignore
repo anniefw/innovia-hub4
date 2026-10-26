@@ -7,3 +7,5 @@ frontend/dist
 frontend/node_modules
 tests
 *.md
+!Innovia.Api/Features/Assistant/knowledge.md
+!Innovia.Api/Features/Assistant/systemprompt.md

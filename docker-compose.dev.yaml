@@ -37,6 +37,7 @@ services:
       AdminUser__Email: "admin@admin.com"
       AdminUser__Password: "Password123!"
       Cors__FrontendOrigin: "http://localhost:5173"
+      OpenAI__ApiKey: ${OPENAI_API_KEY}
     ports:
       - "5123:8080"
     volumes:

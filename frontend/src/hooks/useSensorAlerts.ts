@@ -3,6 +3,7 @@ import type { AlertRaised } from "../api/types";
 import {
   ensureStarted,
   getSensorHubConnection,
+  isRealtimeConfigured,
   joinTenant,
 } from "../lib/sensorHubConnection";
 
@@ -13,6 +14,7 @@ export function useSensorAlerts() {
   const [alerts, setAlerts] = useState<AlertRaised[]>([]);
 
   useEffect(() => {
+    if (!isRealtimeConfigured) return;
     const conn = getSensorHubConnection();
     function handleAlert(alert: AlertRaised) {
       setAlerts((prev) => [alert, ...prev].slice(0, MAX_ALERTS));
