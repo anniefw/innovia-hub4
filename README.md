@@ -36,7 +36,7 @@ Du kan också registrera ett eget medlemskonto via **Registrera**.
 2. **Realtid:** Öppna appen i två fönster, ett som medlem och ett som admin (t.ex. ett vanligt och ett inkognitofönster).
    - Boka som medlem → bokningen dyker upp direkt under **Alla bokningar** hos admin, och beläggningsdiagrammet uppdateras.
    - Sätt en resurs i **Underhåll** som admin (**Resurser**) → statusen ändras direkt i medlemmens resurslista.
-3. **AI-assistenten Nova:** Klicka på den runda knappen nere till höger (syns för inloggade). Prova förslagsknapparna eller frågor som _"Vilka mötesrum finns?"_, _"När har ni öppet på lördag?"_, _"Finns det kaffe?"_. Svaret strömmas fram i realtid.
+3. **AI-assistenten Nova:** Klicka på den runda knappen nere till höger (syns för inloggade). Prova förslagsknapparna eller frågor som _"Vilka mötesrum finns?"_, _"När har ni öppet på lördag?"_, _"Finns det kaffe?"_. Svaret strömmas fram i realtid. Möjligheten till följdfrågor finns då Nova har en medskickad historik på 6 meddelanden.
 4. **Admin:** **Resurstyper** (öppettider och bokningsregler), **Användare**, **Beläggning** (välj datumintervall).
 5. **Sensorer (IoT):** IoT-tjänsterna är inte driftsatta (enligt uppgiften). Sidan **Sensorer** visar därför ett tydligt meddelande om att sensortjänsten är offline, i stället för att appen kraschar. Hur IoT-delen körs lokalt beskrivs i [docs/README_Iot.md](docs/README_Iot.md).
 
@@ -218,14 +218,16 @@ IoT-tjänsterna är valfria lokalt. Utan dem visar sensorsidan att tjänsten är
 
 Lokalt läser backend från `Innovia.Api/appsettings.json` och user-secrets. I produktion sätts allt som miljövariabler (se [`example.env`](example.env)). Dubbelt understreck motsvarar kolon, t.ex. `OpenAI__ApiKey` = `OpenAI:ApiKey`.
 
-| Variabel                                              | Beskrivning                                                  |
-| ----------------------------------------------------- | ------------------------------------------------------------ |
-| `OPENAI_API_KEY`                                      | **Hemlig.** OpenAI-nyckel till Nova                          |
-| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Databasuppgifter                                             |
-| `JWT_ISSUER` / `JWT_AUDIENCE` / `JWT_SECRET`          | JWT-inställningar. Secret ska vara lång och slumpad          |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD`                      | Admin-kontot som seedas vid första start                     |
-| `FRONTEND_ORIGIN`                                     | Frontendens adress, tillåts av CORS (krävs även för SignalR) |
-| `VITE_API_URL`                                        | API:ts adress. Bakas in i frontend vid bygget                |
+| Variabel                                              | Beskrivning                                                                       |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `OPENAI_API_KEY`                                      | **Hemlig.** OpenAI-nyckel till Nova                                               |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Databasuppgifter                                                                  |
+| `JWT_ISSUER` / `JWT_AUDIENCE` / `JWT_SECRET`          | JWT-inställningar. Secret ska vara lång och slumpad                               |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD`                      | Admin-kontot som seedas vid första start                                          |
+| `FRONTEND_ORIGIN`                                     | Frontendens adress, tillåts av CORS (krävs även för SignalR)                      |
+| `VITE_API_URL`                                        | API:ts adress. Bakas in i frontend vid bygget                                     |
+| `APP_DOMAIN` / `API_DOMAIN`                           | Adresserna Caddy hämtar HTTPS-certifikat för och skickar vidare till frontend/api |
+| `GHCR_OWNER`                                          | GitHub-kontot vars images hämtas från GitHub Container Registry                   |
 
 ---
 
