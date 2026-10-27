@@ -14,7 +14,6 @@ Innovia Hub är ett bokningssystem för coworkingcentret Innovia Hub. Medlemmar 
 - [Tester och CI](#tester-och-ci)
 - [Driftsättning](#driftsättning)
 - [Säkerhet](#säkerhet)
-- [Kända begränsningar](#kända-begränsningar)
 - [Mer dokumentation](#mer-dokumentation)
 
 ---
@@ -283,22 +282,12 @@ Servern har ingen egen domän, så den använder [sslip.io](https://sslip.io), s
 
 ---
 
-## Kända begränsningar
-
-- IoT-tjänsterna är inte driftsatta, så sensorsidan visar inga live-värden i den publicerade versionen.
-- Realtime.Hub (IoT) saknar inloggning. Vem som helst som når den kan lyssna och skicka värden. Därför körs den bara lokalt.
-- Nova minns bara de 6 senaste meddelandena och glömmer konversationen när sidan laddas om.
-- Servern har ingen egen domän, utan använder sslip.io. Det räcker för test men inte för en riktig kund.
-- DataProtection-nycklarna sparas inne i API-containern och försvinner vid omstart. Inloggningen påverkas inte (den bygger på JWT), men funktioner som e-postbekräftelse skulle göra det.
-- Ingen automatisk backup av databasen.
-
----
-
 ## Mer dokumentation
 
-| Fil                                                       | Innehåll                                                       |
-| --------------------------------------------------------- | -------------------------------------------------------------- |
-| [docs/README_Nova.md](docs/README_Nova.md)                | AI-assistenten Nova: konfiguration, filer, kontext, felsökning |
-| [docs/README_Iot.md](docs/README_Iot.md)                  | IoT-tjänsterna: portar och startordning                        |
-| [Implementation.md](docs/Implementation.md)               | IoT-integrationen: ändringar och rättade buggar                |
-| [Testning_och_kvalitet.md](docs/Testning_och_kvalitet.md) | Novas tester, framtidssäkring och säkerhet                     |
+| Fil                                                       | Innehåll                                                         |
+| --------------------------------------------------------- | ---------------------------------------------------------------- |
+| [docs/README_Nova.md](docs/README_Nova.md)                | AI-assistenten Nova: konfiguration, filer, kontext, felsökning   |
+| [docs/README_Iot.md](docs/README_Iot.md)                  | IoT-tjänsterna: portar och startordning                          |
+| [Implementation.md](docs/Implementation.md)               | IoT-integrationen: ändringar och rättade buggar                  |
+| [Testning_och_kvalitet.md](docs/Testning_och_kvalitet.md) | Novas tester, framtidssäkring och säkerhet                       |
+| [vg_reflektion.md](docs/vg_reflektion.md)                 | Reflektion: lärdomar, val, problem, arkitektur och driftsättning |
